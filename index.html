@@ -627,7 +627,7 @@
             <button class="tab active" onclick="showTab('morning')">🌅 朝の記録</button>
             <button class="tab" onclick="showTab('evening')">🌙 夜の記録</button>
             <button class="tab" onclick="showTab('history')">📖 履歴</button>
-            <button class="tab" onclick="showTab('analysis')">🤖 AI分析</button>
+            <button class="tab" onclick="showTab('analysis')">📤 データ出力</button>
         </div>
 
         <!-- 朝の記録 -->
@@ -763,13 +763,14 @@
         <!-- AI分析 -->
         <div id="analysisTab" style="display: none;">
             <div class="card">
-                <h2 class="card-title"><span class="icon">🤖</span> AI期間分析</h2>
+                <h2 class="card-title"><span class="icon">📤</span> データ出力</h2>
                 <p style="color: var(--text-light); margin-bottom: 20px;">
-                    指定した期間のデータをAIが分析します。分析結果は自動的に保存されます。
+                    指定した期間のデータを、AIで分析しやすい形式で出力します。<br>
+                    出力したテキストをコピーして、Claude（AI）に貼り付けて分析を依頼してください。
                 </p>
                 
                 <div class="form-group">
-                    <label>分析期間を選択</label>
+                    <label>出力期間を選択</label>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
                         <div>
                             <label style="font-size: 0.9rem; font-weight: normal; margin-bottom: 5px;">開始日</label>
@@ -794,21 +795,23 @@
                     </button>
                 </div>
 
-                <button class="btn" onclick="analyzePeriodData()" id="analyzeBtn">
-                    📊 選択期間のデータを分析
+                <button class="btn" onclick="exportDataForAnalysis()" id="exportBtn">
+                    📤 データを出力
                 </button>
             </div>
 
-            <div id="analysisResult" style="display: none;">
+            <div id="exportResult" style="display: none;">
                 <div class="card">
-                    <h2 class="card-title"><span class="icon">📝</span> 分析結果</h2>
-                    <div id="analysisContent" style="line-height: 1.8; color: var(--text-dark);"></div>
+                    <h2 class="card-title"><span class="icon">📋</span> 出力データ</h2>
+                    <p style="color: var(--text-light); margin-bottom: 15px; font-size: 0.9rem;">
+                        以下のテキストをすべて選択してコピーし、Claudeに貼り付けて分析を依頼してください。<br>
+                        例：「このデータを分析して、傾向や気になる点を教えてください」
+                    </p>
+                    <textarea id="exportContent" readonly style="width: 100%; min-height: 300px; padding: 15px; border: 2px solid var(--border); border-radius: 12px; font-family: monospace; font-size: 0.9rem; line-height: 1.6; background: var(--bg-main);"></textarea>
+                    <button class="btn" onclick="copyToClipboard()" style="margin-top: 15px;">
+                        📋 クリップボードにコピー
+                    </button>
                 </div>
-            </div>
-
-            <div class="card">
-                <h2 class="card-title"><span class="icon">📋</span> 過去の分析結果</h2>
-                <div id="pastAnalysisList" class="history-list"></div>
             </div>
         </div>
     </div>
@@ -1361,8 +1364,6 @@
                 if (!document.getElementById('analysisStartDate').value) {
                     setQuickPeriod(7);
                 }
-                
-                displayPastAnalyses();
             }
         }
 
@@ -1376,8 +1377,8 @@
             document.getElementById('analysisEndDate').value = today.toISOString().split('T')[0];
         }
 
-        // 期間指定データをAI分析
-        async function analyzePeriodData() {
+        // データ出力機能
+        function exportDataForAnalysis() {
             const startDateInput = document.getElementById('analysisStartDate').value;
             const endDateInput = document.getElementById('analysisEndDate').value;
 
@@ -1394,16 +1395,10 @@
                 return;
             }
 
-            const analyzeBtn = document.getElementById('analyzeBtn');
-            analyzeBtn.disabled = true;
-            analyzeBtn.textContent = '分析中...';
-
             const entries = JSON.parse(localStorage.getItem('childDailyEntries') || '[]');
             
             if (entries.length === 0) {
-                alert('分析するデータがありません。記録を追加してください。');
-                analyzeBtn.disabled = false;
-                analyzeBtn.textContent = '📊 選択期間のデータを分析';
+                alert('出力するデータがありません。記録を追加してください。');
                 return;
             }
 
@@ -1415,141 +1410,64 @@
 
             if (periodData.length === 0) {
                 alert('指定期間にデータがありません。');
-                analyzeBtn.disabled = false;
-                analyzeBtn.textContent = '📊 選択期間のデータを分析';
                 return;
             }
 
-            // 期間の日数を計算
-            const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+            // 読みやすい形式でデータを整形
+            let output = `【子どもの記録データ】\n`;
+            output += `期間: ${startDateInput} 〜 ${endDateInput}\n`;
+            output += `記録日数: ${periodData.length}日分\n`;
+            output += `\n${'='.repeat(50)}\n\n`;
 
-            // AIにデータを送信して分析
-            try {
-                const response = await fetch('https://api.anthropic.com/v1/messages', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        model: 'claude-sonnet-4-20250514',
-                        max_tokens: 1000,
-                        messages: [{
-                            role: 'user',
-                            content: `以下は子どもの${startDateInput}から${endDateInput}までの日々の記録です（${daysDiff}日間、記録データ${periodData.length}日分）。この記録を分析して、以下の点についてまとめてください：
-
-1. 全体的な傾向（朝の様子、登校状況、活動パターン）
-2. 気になる点や注意すべきパターン
-3. 改善が見られる点
-4. 保護者へのアドバイス
-
-記録データ：
-${JSON.stringify(periodData, null, 2)}
-
-分析結果は保護者が読みやすいように、優しく共感的なトーンで書いてください。`
-                        }]
-                    })
-                });
-
-                const data = await response.json();
-                const analysisText = data.content.find(c => c.type === 'text')?.text || '分析に失敗しました';
-
-                // 分析結果を表示
-                document.getElementById('analysisContent').innerHTML = analysisText.replace(/\n/g, '<br>');
-                document.getElementById('analysisResult').style.display = 'block';
-
-                // 分析結果を保存
-                saveAnalysis(analysisText, periodData.length, startDateInput, endDateInput);
-
-                analyzeBtn.disabled = false;
-                analyzeBtn.textContent = '📊 選択期間のデータを分析';
-
-            } catch (error) {
-                console.error('AI分析エラー:', error);
-                alert('分析中にエラーが発生しました。もう一度お試しください。');
-                analyzeBtn.disabled = false;
-                analyzeBtn.textContent = '📊 選択期間のデータを分析';
-            }
-        }
-
-        // 分析結果を保存
-        function saveAnalysis(text, dataCount, startDate, endDate) {
-            const analyses = JSON.parse(localStorage.getItem('weeklyAnalyses') || '[]');
-            
-            analyses.unshift({
-                id: Date.now(),
-                timestamp: new Date().toLocaleString('ja-JP'),
-                analysis: text,
-                dataCount: dataCount,
-                startDate: startDate,
-                endDate: endDate
+            periodData.forEach(entry => {
+                output += `■ ${entry.date}\n\n`;
+                
+                if (entry.hasMorning) {
+                    output += `【朝の記録】\n`;
+                    output += `  朝の様子: ${entry.morningMood}\n`;
+                    output += `  登校の様子: ${entry.schoolAttendance}\n\n`;
+                }
+                
+                if (entry.hasEvening) {
+                    output += `【夜の記録】\n`;
+                    output += `  今日やったこと: ${entry.activities.join(', ')}\n`;
+                    
+                    if (entry.routineIssues && entry.routineIssues.length > 0) {
+                        output += `  躓いたシーン: ${entry.routineIssues.join(', ')} (${entry.intensity})\n`;
+                    }
+                    
+                    output += `  就寝時間: ${entry.bedtime}\n`;
+                    
+                    if (entry.notes) {
+                        output += `  気になったこと: ${entry.notes}\n`;
+                    }
+                }
+                
+                output += `\n${'-'.repeat(50)}\n\n`;
             });
 
-            // 最新20件のみ保持
-            if (analyses.length > 20) {
-                analyses.length = 20;
-            }
-
-            localStorage.setItem('weeklyAnalyses', JSON.stringify(analyses));
+            // 出力エリアに表示
+            document.getElementById('exportContent').value = output;
+            document.getElementById('exportResult').style.display = 'block';
             
-            // Firebaseに保存
-            saveToFirebase('analyses', analyses);
-            
-            displayPastAnalyses();
+            // 結果エリアまでスクロール
+            document.getElementById('exportResult').scrollIntoView({ behavior: 'smooth' });
         }
 
-        // 過去の分析結果を表示
-        function displayPastAnalyses() {
-            const analyses = JSON.parse(localStorage.getItem('weeklyAnalyses') || '[]');
-            const listElement = document.getElementById('pastAnalysisList');
-
-            if (analyses.length === 0) {
-                listElement.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">📊</div>
-                        <p>まだ分析結果がありません</p>
-                        <p>期間を選択して「データを分析」ボタンから分析を実行しましょう</p>
-                    </div>
-                `;
-                return;
+        // クリップボードにコピー
+        function copyToClipboard() {
+            const textarea = document.getElementById('exportContent');
+            textarea.select();
+            
+            try {
+                document.execCommand('copy');
+                alert('✅ クリップボードにコピーしました！\n\nClaudeに貼り付けて「このデータを分析してください」と依頼してください。');
+            } catch (err) {
+                // フォールバック: 手動コピーを促す
+                alert('テキストを選択してコピーしてください（長押しまたはCtrl+C / Command+C）');
             }
-
-            listElement.innerHTML = analyses.map(analysis => {
-                const periodText = analysis.startDate && analysis.endDate 
-                    ? `${analysis.startDate} 〜 ${analysis.endDate}` 
-                    : '期間不明';
-                
-                return `
-                    <div class="history-item">
-                        <button class="delete-btn" onclick="deleteAnalysis(${analysis.id})">🗑️</button>
-                        <div class="history-date">
-                            分析日時: ${analysis.timestamp}
-                        </div>
-                        <div style="margin-bottom: 10px; color: var(--text-light); font-size: 0.9rem;">
-                            📅 分析期間: ${periodText} （${analysis.dataCount}日分のデータ）
-                        </div>
-                        <div class="history-value" style="white-space: pre-wrap; line-height: 1.8;">
-                            ${analysis.analysis.replace(/\n/g, '<br>')}
-                        </div>
-                    </div>
-                `;
-            }).join('');
         }
 
-        // 分析結果を削除
-        function deleteAnalysis(id) {
-            if (!confirm('この分析結果を削除してもよろしいですか？')) {
-                return;
-            }
-
-            let analyses = JSON.parse(localStorage.getItem('weeklyAnalyses') || '[]');
-            analyses = analyses.filter(a => a.id !== id);
-            localStorage.setItem('weeklyAnalyses', JSON.stringify(analyses));
-            
-            // Firebaseに保存
-            saveToFirebase('analyses', analyses);
-            
-            displayPastAnalyses();
-        }
     </script>
 </body>
 </html>
