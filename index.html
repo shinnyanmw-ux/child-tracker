@@ -1,0 +1,1555 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>子どもの日々の記録</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Klee+One:wght@400;600&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    
+    <style>
+        :root {
+            --morning: #FFB84D;
+            --evening: #7B68EE;
+            --accent: #FF6B9D;
+            --bg-main: #FFF8F3;
+            --bg-card: #FFFFFF;
+            --text-dark: #4A4A4A;
+            --text-light: #8B8B8B;
+            --shadow: rgba(0, 0, 0, 0.08);
+            --border: #FFE4E1;
+            --success: #4CAF50;
+            --warning: #FF9800;
+            --alert: #F44336;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background: linear-gradient(135deg, #FFF8F3 0%, #FFF0E8 100%);
+            color: var(--text-dark);
+            min-height: 100vh;
+            padding: 20px;
+            background-attachment: fixed;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-family: 'Klee One', cursive;
+            font-size: 2.2rem;
+            color: var(--accent);
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(255, 107, 157, 0.2);
+        }
+
+        .subtitle {
+            color: var(--text-light);
+            font-size: 0.95rem;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: 24px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px var(--shadow);
+            border: 2px solid var(--border);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.12);
+        }
+
+        .card-title {
+            font-family: 'Klee One', cursive;
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-title.morning {
+            color: var(--morning);
+        }
+
+        .card-title.evening {
+            color: var(--evening);
+        }
+
+        .icon {
+            font-size: 1.6rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: var(--text-dark);
+            font-size: 1.05rem;
+        }
+
+        input[type="date"],
+        input[type="time"],
+        input[type="text"],
+        textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: var(--bg-main);
+        }
+
+        input[type="date"]:focus,
+        input[type="time"]:focus,
+        input[type="text"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            background: white;
+            box-shadow: 0 0 0 4px rgba(255, 107, 157, 0.1);
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .option-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        .option-btn {
+            background: var(--bg-main);
+            border: 2px solid var(--border);
+            border-radius: 16px;
+            padding: 16px 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-size: 0.95rem;
+            font-family: 'Noto Sans JP', sans-serif;
+            font-weight: 500;
+        }
+
+        .option-btn:hover {
+            transform: scale(1.05);
+            border-color: var(--accent);
+        }
+
+        .option-btn.selected {
+            background: linear-gradient(135deg, var(--accent), #FF8FB9);
+            border-color: var(--accent);
+            color: white;
+            font-weight: 600;
+            transform: scale(1.08);
+        }
+
+        .option-btn.morning-theme.selected {
+            background: linear-gradient(135deg, var(--morning), #FFD699);
+        }
+
+        .option-btn.evening-theme.selected {
+            background: linear-gradient(135deg, var(--evening), #9B8FE6);
+        }
+
+        .checkbox-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px;
+            background: var(--bg-main);
+            border-radius: 12px;
+            border: 2px solid var(--border);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .checkbox-item:hover {
+            border-color: var(--accent);
+            background: white;
+        }
+
+        .checkbox-item.checked {
+            background: linear-gradient(135deg, #FFE5EC, #FFF0F5);
+            border-color: var(--accent);
+        }
+
+        .checkbox {
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .checkbox-item.checked .checkbox {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .checkbox::after {
+            content: '✓';
+            color: white;
+            font-weight: bold;
+            opacity: 0;
+            transform: scale(0);
+            transition: all 0.3s ease;
+        }
+
+        .checkbox-item.checked .checkbox::after {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--accent), #FF8FB9);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            padding: 18px 32px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 107, 157, 0.3);
+            font-family: 'Klee One', cursive;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 157, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn.morning-theme {
+            background: linear-gradient(135deg, var(--morning), #FFD699);
+            box-shadow: 0 4px 15px rgba(255, 184, 77, 0.3);
+        }
+
+        .btn.morning-theme:hover {
+            box-shadow: 0 6px 20px rgba(255, 184, 77, 0.4);
+        }
+
+        .btn.evening-theme {
+            background: linear-gradient(135deg, var(--evening), #9B8FE6);
+            box-shadow: 0 4px 15px rgba(123, 104, 238, 0.3);
+        }
+
+        .btn.evening-theme:hover {
+            box-shadow: 0 6px 20px rgba(123, 104, 238, 0.4);
+        }
+
+        .tab-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            background: white;
+            padding: 8px;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px var(--shadow);
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            background: transparent;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            color: var(--text-light);
+            font-family: 'Klee One', cursive;
+            font-size: 1rem;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, var(--accent), #FF8FB9);
+            color: white;
+            box-shadow: 0 4px 10px rgba(255, 107, 157, 0.3);
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .history-item {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 20px;
+            border: 2px solid var(--border);
+            position: relative;
+        }
+
+        .history-item.morning-entry::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--morning);
+            border-radius: 16px 0 0 16px;
+        }
+
+        .history-item.evening-entry::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--evening);
+            border-radius: 16px 0 0 16px;
+        }
+
+        .history-date {
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 15px;
+            font-size: 1.15rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .history-type-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        .history-type-badge.morning {
+            background: var(--morning);
+        }
+
+        .history-type-badge.evening {
+            background: var(--evening);
+        }
+
+        .history-section {
+            margin-bottom: 12px;
+        }
+
+        .history-label {
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+
+        .history-value {
+            color: var(--text-light);
+            line-height: 1.6;
+            padding: 8px 12px;
+            background: var(--bg-main);
+            border-radius: 8px;
+        }
+
+        .history-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 5px;
+        }
+
+        .history-tag {
+            background: linear-gradient(135deg, #E3F2FD, #BBDEFB);
+            color: #1976D2;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            color: #FF6B6B;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            float: right;
+            font-size: 1.2rem;
+        }
+
+        .delete-btn:hover {
+            background: #FFE5E5;
+            transform: scale(1.1);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-light);
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .intensity-container {
+            margin-top: 10px;
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .option-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* ログイン画面 */
+        #loginScreen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: var(--bg-card);
+            border-radius: 24px;
+            padding: 40px;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 10px 30px var(--shadow);
+            border: 2px solid var(--border);
+            text-align: center;
+        }
+
+        .login-title {
+            font-family: 'Klee One', cursive;
+            font-size: 2rem;
+            color: var(--accent);
+            margin-bottom: 10px;
+        }
+
+        .login-subtitle {
+            color: var(--text-light);
+            margin-bottom: 30px;
+            font-size: 0.9rem;
+        }
+
+        .login-input {
+            width: 100%;
+            padding: 14px 18px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 1rem;
+            margin-bottom: 15px;
+            background: var(--bg-main);
+        }
+
+        .login-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            background: white;
+            box-shadow: 0 0 0 4px rgba(255, 107, 157, 0.1);
+        }
+
+        .login-btn {
+            background: linear-gradient(135deg, var(--accent), #FF8FB9);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            padding: 16px 32px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 107, 157, 0.3);
+            font-family: 'Klee One', cursive;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 157, 0.4);
+        }
+
+        .login-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .error-message {
+            background: #FFE5E5;
+            color: #D32F2F;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+        }
+
+        .logout-btn {
+            background: var(--bg-main);
+            border: 2px solid var(--border);
+            color: var(--text-dark);
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-left: auto;
+            display: block;
+            margin-top: 20px;
+        }
+
+        .logout-btn:hover {
+            border-color: var(--accent);
+            background: white;
+        }
+    </style>
+</head>
+<body>
+    <!-- ログイン画面 -->
+    <div id="loginScreen">
+        <div class="login-card">
+            <h1 class="login-title">📔 子どもの日々の記録</h1>
+            <p class="login-subtitle">ご家族でデータを共有できます</p>
+            
+            <div id="loginError" class="error-message" style="display: none;"></div>
+            
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <input type="email" id="emailInput" class="login-input" placeholder="メールアドレス" required>
+                <input type="password" id="passwordInput" class="login-input" placeholder="パスワード" required>
+                <button type="submit" class="login-btn" id="loginBtn">ログイン</button>
+            </form>
+            
+            <p style="margin: 20px 0; color: var(--text-light); font-size: 0.9rem;">または</p>
+            
+            <button onclick="showSignup()" class="login-btn" style="background: linear-gradient(135deg, var(--evening), #9B8FE6);">
+                新規アカウント作成
+            </button>
+            
+            <div id="signupForm" style="display: none; margin-top: 20px;">
+                <p style="color: var(--text-light); font-size: 0.85rem; margin-bottom: 15px;">
+                    アカウントを作成後、同じメールアドレスとパスワードを<br>ご家族と共有してください
+                </p>
+                <input type="email" id="signupEmail" class="login-input" placeholder="メールアドレス">
+                <input type="password" id="signupPassword" class="login-input" placeholder="パスワード（6文字以上）">
+                <button onclick="handleSignup()" class="login-btn">アカウント作成</button>
+                <button onclick="hideSignup()" style="background: transparent; color: var(--text-light); margin-top: 10px;">
+                    キャンセル
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- メインアプリ -->
+    <div class="container" id="mainApp" style="display: none;">
+        <header>
+            <h1>📔 子どもの日々の記録</h1>
+            <p class="subtitle">朝と夜の様子を記録して、成長をサポート</p>
+            <p class="subtitle" id="userEmail" style="margin-top: 10px; font-weight: 600;"></p>
+            <button onclick="handleLogout()" class="logout-btn">ログアウト</button>
+        </header>
+
+        <div class="tab-container">
+            <button class="tab active" onclick="showTab('morning')">🌅 朝の記録</button>
+            <button class="tab" onclick="showTab('evening')">🌙 夜の記録</button>
+            <button class="tab" onclick="showTab('history')">📖 履歴</button>
+            <button class="tab" onclick="showTab('analysis')">🤖 AI分析</button>
+        </div>
+
+        <!-- 朝の記録 -->
+        <div id="morningTab">
+            <div class="card">
+                <h2 class="card-title morning"><span class="icon">📅</span> 日付</h2>
+                <div class="form-group">
+                    <input type="date" id="morningDate" required>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="card-title morning"><span class="icon">😊</span> 朝の様子</h2>
+                <div class="option-grid">
+                    <div class="option-btn morning-theme" data-field="morningMood" data-value="すっきり">すっきり</div>
+                    <div class="option-btn morning-theme" data-field="morningMood" data-value="ぐずぐず">ぐずぐず</div>
+                    <div class="option-btn morning-theme" data-field="morningMood" data-value="眠そう">眠そう</div>
+                    <div class="option-btn morning-theme" data-field="morningMood" data-value="その他">その他</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="card-title morning"><span class="icon">🏫</span> 登校の様子</h2>
+                <div class="option-grid">
+                    <div class="option-btn morning-theme" data-field="schoolAttendance" data-value="すんなり">すんなり</div>
+                    <div class="option-btn morning-theme" data-field="schoolAttendance" data-value="グズグズしつつ行った">グズグズしつつ行った</div>
+                    <div class="option-btn morning-theme" data-field="schoolAttendance" data-value="早退or遅刻して行った">早退or遅刻して行った</div>
+                    <div class="option-btn morning-theme" data-field="schoolAttendance" data-value="休んだ">休んだ</div>
+                </div>
+            </div>
+
+            <button class="btn morning-theme" onclick="saveMorningEntry()">💾 朝の記録を保存</button>
+        </div>
+
+        <!-- 夜の記録 -->
+        <div id="eveningTab" style="display: none;">
+            <div class="card">
+                <h2 class="card-title evening"><span class="icon">📅</span> 日付</h2>
+                <div class="form-group">
+                    <input type="date" id="eveningDate" required>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="card-title evening"><span class="icon">✏️</span> 今日やったこと</h2>
+                <div class="checkbox-list" id="activitiesList">
+                    <div class="checkbox-item" data-activity="学校（4時間）">
+                        <div class="checkbox"></div>
+                        <span>学校（4時間）</span>
+                    </div>
+                    <div class="checkbox-item" data-activity="学校（5時間）">
+                        <div class="checkbox"></div>
+                        <span>学校（5時間）</span>
+                    </div>
+                    <div class="checkbox-item" data-activity="療育">
+                        <div class="checkbox"></div>
+                        <span>療育</span>
+                    </div>
+                    <div class="checkbox-item" data-activity="リタリコ">
+                        <div class="checkbox"></div>
+                        <span>リタリコ</span>
+                    </div>
+                    <div class="checkbox-item" data-activity="友達と遊んだ">
+                        <div class="checkbox"></div>
+                        <span>友達と遊んだ</span>
+                    </div>
+                    <div class="checkbox-item" data-activity="その他" id="otherActivityCheckbox">
+                        <div class="checkbox"></div>
+                        <span>その他</span>
+                    </div>
+                </div>
+                <div id="otherActivityInput" style="display: none; margin-top: 15px;">
+                    <input type="text" id="otherActivityText" placeholder="その他の活動を入力してください..." style="width: 100%;">
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="card-title evening"><span class="icon">⚠️</span> 夜のルーチンで躓いたシーン</h2>
+                <div class="checkbox-list" id="routineIssuesList">
+                    <div class="checkbox-item" data-issue="夜ごはん">
+                        <div class="checkbox"></div>
+                        <span>夜ごはん</span>
+                    </div>
+                    <div class="checkbox-item" data-issue="お風呂">
+                        <div class="checkbox"></div>
+                        <span>お風呂</span>
+                    </div>
+                    <div class="checkbox-item" data-issue="宿題">
+                        <div class="checkbox"></div>
+                        <span>宿題</span>
+                    </div>
+                    <div class="checkbox-item" data-issue="寝る">
+                        <div class="checkbox"></div>
+                        <span>寝る</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" id="intensityCard" style="display: none;">
+                <h2 class="card-title evening"><span class="icon">📊</span> 躓き度合</h2>
+                <div class="option-grid">
+                    <div class="option-btn evening-theme" data-field="intensity" data-value="軽く">軽く</div>
+                    <div class="option-btn evening-theme" data-field="intensity" data-value="時間かかった">時間かかった</div>
+                    <div class="option-btn evening-theme" data-field="intensity" data-value="ギャン泣き">ギャン泣き</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="card-title evening"><span class="icon">🛌</span> 就寝時間</h2>
+                <div class="form-group">
+                    <input type="time" id="bedtime" required>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="card-title evening"><span class="icon">📝</span> 気になったこと</h2>
+                <div class="form-group">
+                    <textarea id="eveningNotes" placeholder="今日気になったことや特記事項を記録しましょう..."></textarea>
+                </div>
+            </div>
+
+            <button class="btn evening-theme" onclick="saveEveningEntry()">💾 夜の記録を保存</button>
+        </div>
+
+        <!-- 履歴 -->
+        <div id="historyTab" style="display: none;">
+            <div class="card">
+                <h2 class="card-title"><span class="icon">📚</span> これまでの記録</h2>
+                <div id="historyList" class="history-list"></div>
+            </div>
+        </div>
+
+        <!-- AI分析 -->
+        <div id="analysisTab" style="display: none;">
+            <div class="card">
+                <h2 class="card-title"><span class="icon">🤖</span> AI期間分析</h2>
+                <p style="color: var(--text-light); margin-bottom: 20px;">
+                    指定した期間のデータをAIが分析します。分析結果は自動的に保存されます。
+                </p>
+                
+                <div class="form-group">
+                    <label>分析期間を選択</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                        <div>
+                            <label style="font-size: 0.9rem; font-weight: normal; margin-bottom: 5px;">開始日</label>
+                            <input type="date" id="analysisStartDate" required>
+                        </div>
+                        <div>
+                            <label style="font-size: 0.9rem; font-weight: normal; margin-bottom: 5px;">終了日</label>
+                            <input type="date" id="analysisEndDate" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <button class="btn" onclick="setQuickPeriod(7)" style="flex: 1; padding: 12px; font-size: 0.95rem;">
+                        過去1週間
+                    </button>
+                    <button class="btn" onclick="setQuickPeriod(14)" style="flex: 1; padding: 12px; font-size: 0.95rem;">
+                        過去2週間
+                    </button>
+                    <button class="btn" onclick="setQuickPeriod(30)" style="flex: 1; padding: 12px; font-size: 0.95rem;">
+                        過去1ヶ月
+                    </button>
+                </div>
+
+                <button class="btn" onclick="analyzePeriodData()" id="analyzeBtn">
+                    📊 選択期間のデータを分析
+                </button>
+            </div>
+
+            <div id="analysisResult" style="display: none;">
+                <div class="card">
+                    <h2 class="card-title"><span class="icon">📝</span> 分析結果</h2>
+                    <div id="analysisContent" style="line-height: 1.8; color: var(--text-dark);"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="card-title"><span class="icon">📋</span> 過去の分析結果</h2>
+                <div id="pastAnalysisList" class="history-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase設定（ユーザーは自分のFirebase設定に置き換える必要があります）
+        const firebaseConfig = {
+ 		 apiKey: "AIzaSyAkw1ZOMeJDP8TMW04JH_EUjD6WE9qxkNU",
+		 authDomain: "child-tracker-2a36c.firebaseapp.com",
+ 		 databaseURL: "https://child-tracker-2a36c-default-rtdb.firebaseio.com",
+ 		 projectId: "child-tracker-2a36c",
+ 		 storageBucket: "child-tracker-2a36c.firebasestorage.app",
+		 messagingSenderId: "104834828543",
+		 appId: "1:104834828543:web:d1f0f88ee30018d28024ca",
+		 measurementId: "G-BBVSJLVJLD"
+        };
+
+        // Firebase初期化
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+        let currentUser = null;
+        let userDataRef = null;
+
+        // 認証状態の監視
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                currentUser = user;
+                userDataRef = database.ref('users/' + user.uid);
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('mainApp').style.display = 'block';
+                document.getElementById('userEmail').textContent = user.email;
+                
+                // Firebaseからデータを読み込む
+                loadDataFromFirebase();
+            } else {
+                currentUser = null;
+                document.getElementById('loginScreen').style.display = 'flex';
+                document.getElementById('mainApp').style.display = 'none';
+            }
+        });
+
+        // ログイン処理
+        function handleLogin(event) {
+            event.preventDefault();
+            const email = document.getElementById('emailInput').value;
+            const password = document.getElementById('passwordInput').value;
+            const loginBtn = document.getElementById('loginBtn');
+            const errorDiv = document.getElementById('loginError');
+
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'ログイン中...';
+            errorDiv.style.display = 'none';
+
+            auth.signInWithEmailAndPassword(email, password)
+                .catch(error => {
+                    let message = 'ログインに失敗しました。';
+                    if (error.code === 'auth/user-not-found') {
+                        message = 'このメールアドレスは登録されていません。';
+                    } else if (error.code === 'auth/wrong-password') {
+                        message = 'パスワードが正しくありません。';
+                    } else if (error.code === 'auth/invalid-email') {
+                        message = 'メールアドレスの形式が正しくありません。';
+                    }
+                    errorDiv.textContent = message;
+                    errorDiv.style.display = 'block';
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = 'ログイン';
+                });
+        }
+
+        // サインアップ表示
+        function showSignup() {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('signupForm').style.display = 'block';
+        }
+
+        function hideSignup() {
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('signupForm').style.display = 'none';
+        }
+
+        // サインアップ処理
+        function handleSignup() {
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+            const errorDiv = document.getElementById('loginError');
+
+            if (!email || !password) {
+                errorDiv.textContent = 'メールアドレスとパスワードを入力してください。';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            if (password.length < 6) {
+                errorDiv.textContent = 'パスワードは6文字以上で設定してください。';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            errorDiv.style.display = 'none';
+
+            auth.createUserWithEmailAndPassword(email, password)
+                .then(() => {
+                    alert('アカウントを作成しました！\n\nこのメールアドレスとパスワードをご家族と共有してください。');
+                })
+                .catch(error => {
+                    let message = 'アカウント作成に失敗しました。';
+                    if (error.code === 'auth/email-already-in-use') {
+                        message = 'このメールアドレスは既に使用されています。';
+                    } else if (error.code === 'auth/invalid-email') {
+                        message = 'メールアドレスの形式が正しくありません。';
+                    } else if (error.code === 'auth/weak-password') {
+                        message = 'パスワードは6文字以上で設定してください。';
+                    }
+                    errorDiv.textContent = message;
+                    errorDiv.style.display = 'block';
+                });
+        }
+
+        // ログアウト処理
+        function handleLogout() {
+            if (confirm('ログアウトしますか？')) {
+                auth.signOut();
+            }
+        }
+
+        // Firebaseからデータ読み込み
+        function loadDataFromFirebase() {
+            if (!userDataRef) return;
+
+            // 日々の記録を読み込み
+            userDataRef.child('entries').once('value', snapshot => {
+                const data = snapshot.val();
+                if (data) {
+                    localStorage.setItem('childDailyEntries', JSON.stringify(data));
+                }
+            });
+
+            // 分析結果を読み込み
+            userDataRef.child('analyses').once('value', snapshot => {
+                const data = snapshot.val();
+                if (data) {
+                    localStorage.setItem('weeklyAnalyses', JSON.stringify(data));
+                }
+            });
+
+            // リアルタイム同期
+            userDataRef.child('entries').on('value', snapshot => {
+                const data = snapshot.val();
+                if (data) {
+                    localStorage.setItem('childDailyEntries', JSON.stringify(data));
+                    // 履歴タブが表示されている場合は更新
+                    if (document.getElementById('historyTab').style.display !== 'none') {
+                        displayHistory();
+                    }
+                }
+            });
+
+            userDataRef.child('analyses').on('value', snapshot => {
+                const data = snapshot.val();
+                if (data) {
+                    localStorage.setItem('weeklyAnalyses', JSON.stringify(data));
+                    // 分析タブが表示されている場合は更新
+                    if (document.getElementById('analysisTab').style.display !== 'none') {
+                        displayPastAnalyses();
+                    }
+                }
+            });
+        }
+
+        // Firebaseにデータを保存（既存のlocalStorage保存処理を置き換え）
+        function saveToFirebase(type, data) {
+            if (!userDataRef) return;
+
+            if (type === 'entries') {
+                userDataRef.child('entries').set(data);
+            } else if (type === 'analyses') {
+                userDataRef.child('analyses').set(data);
+            }
+        }
+
+        // 今日の日付を設定
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('morningDate').value = today;
+        document.getElementById('eveningDate').value = today;
+
+        // 選択データ
+        let morningData = {
+            morningMood: '',
+            schoolAttendance: ''
+        };
+
+        let eveningData = {
+            activities: [],
+            routineIssues: [],
+            intensity: ''
+        };
+
+        // オプションボタンの選択（単一選択）
+        document.querySelectorAll('.option-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const field = this.dataset.field;
+                const value = this.dataset.value;
+                
+                // 同じフィールドの他のボタンの選択を解除
+                document.querySelectorAll(`.option-btn[data-field="${field}"]`).forEach(b => {
+                    b.classList.remove('selected');
+                });
+                
+                this.classList.add('selected');
+                
+                // データに保存
+                if (field === 'morningMood' || field === 'schoolAttendance') {
+                    morningData[field] = value;
+                } else if (field === 'intensity') {
+                    eveningData[field] = value;
+                }
+            });
+        });
+
+        // チェックボックスアイテムの選択（複数選択）
+        document.querySelectorAll('#activitiesList .checkbox-item').forEach(item => {
+            item.addEventListener('click', function() {
+                this.classList.toggle('checked');
+                const activity = this.dataset.activity;
+                
+                if (this.classList.contains('checked')) {
+                    if (!eveningData.activities.includes(activity)) {
+                        eveningData.activities.push(activity);
+                    }
+                } else {
+                    eveningData.activities = eveningData.activities.filter(a => a !== activity);
+                }
+
+                // 「その他」が選択された場合、入力欄を表示
+                if (activity === 'その他') {
+                    const otherInput = document.getElementById('otherActivityInput');
+                    if (this.classList.contains('checked')) {
+                        otherInput.style.display = 'block';
+                    } else {
+                        otherInput.style.display = 'none';
+                        document.getElementById('otherActivityText').value = '';
+                    }
+                }
+            });
+        });
+
+        document.querySelectorAll('#routineIssuesList .checkbox-item').forEach(item => {
+            item.addEventListener('click', function() {
+                this.classList.toggle('checked');
+                const issue = this.dataset.issue;
+                
+                if (this.classList.contains('checked')) {
+                    if (!eveningData.routineIssues.includes(issue)) {
+                        eveningData.routineIssues.push(issue);
+                    }
+                } else {
+                    eveningData.routineIssues = eveningData.routineIssues.filter(i => i !== issue);
+                }
+
+                // 躓きがある場合は度合を表示
+                const intensityCard = document.getElementById('intensityCard');
+                if (eveningData.routineIssues.length > 0) {
+                    intensityCard.style.display = 'block';
+                } else {
+                    intensityCard.style.display = 'none';
+                    eveningData.intensity = '';
+                    document.querySelectorAll('.option-btn[data-field="intensity"]').forEach(b => {
+                        b.classList.remove('selected');
+                    });
+                }
+            });
+        });
+
+        // 朝の記録を保存
+        function saveMorningEntry() {
+            const date = document.getElementById('morningDate').value;
+
+            if (!date) {
+                alert('日付を選択してください');
+                return;
+            }
+
+            if (!morningData.morningMood) {
+                alert('朝の様子を選択してください');
+                return;
+            }
+
+            if (!morningData.schoolAttendance) {
+                alert('登校の様子を選択してください');
+                return;
+            }
+
+            const morningEntry = {
+                morningMood: morningData.morningMood,
+                schoolAttendance: morningData.schoolAttendance,
+                hasMorning: true
+            };
+
+            // 同じ日付の夜の記録があれば統合、なければ朝のみ保存
+            let entries = JSON.parse(localStorage.getItem('childDailyEntries') || '[]');
+            const existingIndex = entries.findIndex(e => e.date === date);
+            
+            if (existingIndex >= 0) {
+                // 既存の記録（夜）に朝のデータを追加
+                entries[existingIndex] = {
+                    ...entries[existingIndex],
+                    ...morningEntry
+                };
+            } else {
+                // 新規で朝のみの記録を作成
+                entries.push({
+                    id: Date.now(),
+                    date: date,
+                    ...morningEntry
+                });
+            }
+
+            entries.sort((a, b) => new Date(b.date) - new Date(a.date));
+            localStorage.setItem('childDailyEntries', JSON.stringify(entries));
+            
+            // Firebaseに保存
+            saveToFirebase('entries', entries);
+            
+            // リセット
+            morningData = { morningMood: '', schoolAttendance: '' };
+            document.querySelectorAll('.option-btn.morning-theme').forEach(b => b.classList.remove('selected'));
+            
+            alert('✅ 朝の記録を保存しました！');
+            showTab('history');
+        }
+
+        // 夜の記録を保存
+        function saveEveningEntry() {
+            const date = document.getElementById('eveningDate').value;
+            const bedtime = document.getElementById('bedtime').value;
+            const notes = document.getElementById('eveningNotes').value;
+            const otherActivityText = document.getElementById('otherActivityText').value;
+
+            if (!date) {
+                alert('日付を選択してください');
+                return;
+            }
+
+            if (eveningData.activities.length === 0) {
+                alert('今日やったことを選択してください');
+                return;
+            }
+
+            if (!bedtime) {
+                alert('就寝時間を入力してください');
+                return;
+            }
+
+            if (eveningData.routineIssues.length > 0 && !eveningData.intensity) {
+                alert('躓き度合を選択してください');
+                return;
+            }
+
+            // その他が選択されている場合、テキストを追加
+            let activities = [...eveningData.activities];
+            if (activities.includes('その他') && otherActivityText) {
+                activities = activities.filter(a => a !== 'その他');
+                activities.push(`その他（${otherActivityText}）`);
+            }
+
+            const eveningEntry = {
+                activities: activities,
+                routineIssues: [...eveningData.routineIssues],
+                intensity: eveningData.intensity,
+                bedtime: bedtime,
+                notes: notes
+            };
+
+            // 同じ日付の朝の記録があれば統合、なければ夜のみ保存
+            let entries = JSON.parse(localStorage.getItem('childDailyEntries') || '[]');
+            const existingIndex = entries.findIndex(e => e.date === date);
+            
+            if (existingIndex >= 0) {
+                // 既存の記録（朝）に夜のデータを追加
+                entries[existingIndex] = {
+                    ...entries[existingIndex],
+                    ...eveningEntry,
+                    hasEvening: true
+                };
+            } else {
+                // 新規で夜のみの記録を作成
+                entries.push({
+                    id: Date.now(),
+                    date: date,
+                    ...eveningEntry,
+                    hasEvening: true
+                });
+            }
+
+            entries.sort((a, b) => new Date(b.date) - new Date(a.date));
+            localStorage.setItem('childDailyEntries', JSON.stringify(entries));
+            
+            // Firebaseに保存
+            saveToFirebase('entries', entries);
+            
+            // リセット
+            eveningData = { activities: [], routineIssues: [], intensity: '' };
+            document.getElementById('bedtime').value = '';
+            document.getElementById('eveningNotes').value = '';
+            document.getElementById('otherActivityText').value = '';
+            document.getElementById('otherActivityInput').style.display = 'none';
+            document.querySelectorAll('#activitiesList .checkbox-item').forEach(item => item.classList.remove('checked'));
+            document.querySelectorAll('#routineIssuesList .checkbox-item').forEach(item => item.classList.remove('checked'));
+            document.querySelectorAll('.option-btn[data-field="intensity"]').forEach(b => b.classList.remove('selected'));
+            document.getElementById('intensityCard').style.display = 'none';
+            
+            alert('✅ 夜の記録を保存しました！');
+            showTab('history');
+        }
+
+        // 履歴を表示
+        function displayHistory() {
+            const entries = JSON.parse(localStorage.getItem('childDailyEntries') || '[]');
+            const historyList = document.getElementById('historyList');
+
+            if (entries.length === 0) {
+                historyList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <p>まだ記録がありません</p>
+                        <p>朝と夜の記録を始めましょう！</p>
+                    </div>
+                `;
+                return;
+            }
+
+            historyList.innerHTML = entries.map(entry => {
+                let html = `
+                    <div class="history-item">
+                        <button class="delete-btn" onclick="deleteEntry('${entry.date}')">🗑️</button>
+                        <div class="history-date">${formatDate(entry.date)}</div>
+                `;
+
+                // 朝の記録
+                if (entry.hasMorning) {
+                    html += `
+                        <div style="background: linear-gradient(135deg, #FFF4E6, #FFE8CC); padding: 15px; border-radius: 12px; margin-bottom: 15px;">
+                            <div style="font-weight: 600; color: var(--morning); margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                                <span>🌅</span> 朝の記録
+                            </div>
+                            <div class="history-section">
+                                <div class="history-label">朝の様子</div>
+                                <div class="history-value">${entry.morningMood}</div>
+                            </div>
+                            <div class="history-section">
+                                <div class="history-label">登校の様子</div>
+                                <div class="history-value">${entry.schoolAttendance}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // 夜の記録
+                if (entry.hasEvening) {
+                    html += `
+                        <div style="background: linear-gradient(135deg, #F3F0FF, #E8E0FF); padding: 15px; border-radius: 12px;">
+                            <div style="font-weight: 600; color: var(--evening); margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                                <span>🌙</span> 夜の記録
+                            </div>
+                            <div class="history-section">
+                                <div class="history-label">今日やったこと</div>
+                                <div class="history-tags">
+                                    ${entry.activities.map(a => `<span class="history-tag">${a}</span>`).join('')}
+                                </div>
+                            </div>
+                            ${entry.routineIssues && entry.routineIssues.length > 0 ? `
+                                <div class="history-section">
+                                    <div class="history-label">躓いたシーン（${entry.intensity}）</div>
+                                    <div class="history-tags">
+                                        ${entry.routineIssues.map(i => `<span class="history-tag">${i}</span>`).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+                            <div class="history-section">
+                                <div class="history-label">就寝時間</div>
+                                <div class="history-value">${entry.bedtime}</div>
+                            </div>
+                            ${entry.notes ? `
+                                <div class="history-section">
+                                    <div class="history-label">気になったこと</div>
+                                    <div class="history-value">${entry.notes}</div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }
+
+                html += `</div>`;
+                return html;
+            }).join('');
+        }
+
+        // 日付のフォーマット
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const year = date.getFullYear();
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+            const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+            const weekday = weekdays[date.getDay()];
+            return `${year}年${month}月${day}日（${weekday}）`;
+        }
+
+        // エントリーを削除
+        function deleteEntry(date) {
+            if (!confirm('この記録を削除してもよろしいですか？')) {
+                return;
+            }
+
+            let entries = JSON.parse(localStorage.getItem('childDailyEntries') || '[]');
+            entries = entries.filter(entry => entry.date !== date);
+            localStorage.setItem('childDailyEntries', JSON.stringify(entries));
+            
+            // Firebaseに保存
+            saveToFirebase('entries', entries);
+            
+            displayHistory();
+        }
+
+        // タブの切り替え
+        function showTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById('morningTab').style.display = 'none';
+            document.getElementById('eveningTab').style.display = 'none';
+            document.getElementById('historyTab').style.display = 'none';
+            document.getElementById('analysisTab').style.display = 'none';
+
+            if (tab === 'morning') {
+                document.getElementById('morningTab').style.display = 'block';
+                document.querySelectorAll('.tab')[0].classList.add('active');
+            } else if (tab === 'evening') {
+                document.getElementById('eveningTab').style.display = 'block';
+                document.querySelectorAll('.tab')[1].classList.add('active');
+            } else if (tab === 'history') {
+                document.getElementById('historyTab').style.display = 'block';
+                document.querySelectorAll('.tab')[2].classList.add('active');
+                displayHistory();
+            } else if (tab === 'analysis') {
+                document.getElementById('analysisTab').style.display = 'block';
+                document.querySelectorAll('.tab')[3].classList.add('active');
+                
+                // デフォルトで過去1週間を設定
+                if (!document.getElementById('analysisStartDate').value) {
+                    setQuickPeriod(7);
+                }
+                
+                displayPastAnalyses();
+            }
+        }
+
+        // クイック期間設定
+        function setQuickPeriod(days) {
+            const today = new Date();
+            const startDate = new Date(today);
+            startDate.setDate(today.getDate() - days);
+            
+            document.getElementById('analysisStartDate').value = startDate.toISOString().split('T')[0];
+            document.getElementById('analysisEndDate').value = today.toISOString().split('T')[0];
+        }
+
+        // 期間指定データをAI分析
+        async function analyzePeriodData() {
+            const startDateInput = document.getElementById('analysisStartDate').value;
+            const endDateInput = document.getElementById('analysisEndDate').value;
+
+            if (!startDateInput || !endDateInput) {
+                alert('開始日と終了日を選択してください');
+                return;
+            }
+
+            const startDate = new Date(startDateInput);
+            const endDate = new Date(endDateInput);
+
+            if (startDate > endDate) {
+                alert('開始日は終了日より前の日付を選択してください');
+                return;
+            }
+
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            analyzeBtn.disabled = true;
+            analyzeBtn.textContent = '分析中...';
+
+            const entries = JSON.parse(localStorage.getItem('childDailyEntries') || '[]');
+            
+            if (entries.length === 0) {
+                alert('分析するデータがありません。記録を追加してください。');
+                analyzeBtn.disabled = false;
+                analyzeBtn.textContent = '📊 選択期間のデータを分析';
+                return;
+            }
+
+            // 指定期間のデータを取得
+            const periodData = entries.filter(entry => {
+                const entryDate = new Date(entry.date);
+                return entryDate >= startDate && entryDate <= endDate;
+            });
+
+            if (periodData.length === 0) {
+                alert('指定期間にデータがありません。');
+                analyzeBtn.disabled = false;
+                analyzeBtn.textContent = '📊 選択期間のデータを分析';
+                return;
+            }
+
+            // 期間の日数を計算
+            const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+
+            // AIにデータを送信して分析
+            try {
+                const response = await fetch('https://api.anthropic.com/v1/messages', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        model: 'claude-sonnet-4-20250514',
+                        max_tokens: 1000,
+                        messages: [{
+                            role: 'user',
+                            content: `以下は子どもの${startDateInput}から${endDateInput}までの日々の記録です（${daysDiff}日間、記録データ${periodData.length}日分）。この記録を分析して、以下の点についてまとめてください：
+
+1. 全体的な傾向（朝の様子、登校状況、活動パターン）
+2. 気になる点や注意すべきパターン
+3. 改善が見られる点
+4. 保護者へのアドバイス
+
+記録データ：
+${JSON.stringify(periodData, null, 2)}
+
+分析結果は保護者が読みやすいように、優しく共感的なトーンで書いてください。`
+                        }]
+                    })
+                });
+
+                const data = await response.json();
+                const analysisText = data.content.find(c => c.type === 'text')?.text || '分析に失敗しました';
+
+                // 分析結果を表示
+                document.getElementById('analysisContent').innerHTML = analysisText.replace(/\n/g, '<br>');
+                document.getElementById('analysisResult').style.display = 'block';
+
+                // 分析結果を保存
+                saveAnalysis(analysisText, periodData.length, startDateInput, endDateInput);
+
+                analyzeBtn.disabled = false;
+                analyzeBtn.textContent = '📊 選択期間のデータを分析';
+
+            } catch (error) {
+                console.error('AI分析エラー:', error);
+                alert('分析中にエラーが発生しました。もう一度お試しください。');
+                analyzeBtn.disabled = false;
+                analyzeBtn.textContent = '📊 選択期間のデータを分析';
+            }
+        }
+
+        // 分析結果を保存
+        function saveAnalysis(text, dataCount, startDate, endDate) {
+            const analyses = JSON.parse(localStorage.getItem('weeklyAnalyses') || '[]');
+            
+            analyses.unshift({
+                id: Date.now(),
+                timestamp: new Date().toLocaleString('ja-JP'),
+                analysis: text,
+                dataCount: dataCount,
+                startDate: startDate,
+                endDate: endDate
+            });
+
+            // 最新20件のみ保持
+            if (analyses.length > 20) {
+                analyses.length = 20;
+            }
+
+            localStorage.setItem('weeklyAnalyses', JSON.stringify(analyses));
+            
+            // Firebaseに保存
+            saveToFirebase('analyses', analyses);
+            
+            displayPastAnalyses();
+        }
+
+        // 過去の分析結果を表示
+        function displayPastAnalyses() {
+            const analyses = JSON.parse(localStorage.getItem('weeklyAnalyses') || '[]');
+            const listElement = document.getElementById('pastAnalysisList');
+
+            if (analyses.length === 0) {
+                listElement.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📊</div>
+                        <p>まだ分析結果がありません</p>
+                        <p>期間を選択して「データを分析」ボタンから分析を実行しましょう</p>
+                    </div>
+                `;
+                return;
+            }
+
+            listElement.innerHTML = analyses.map(analysis => {
+                const periodText = analysis.startDate && analysis.endDate 
+                    ? `${analysis.startDate} 〜 ${analysis.endDate}` 
+                    : '期間不明';
+                
+                return `
+                    <div class="history-item">
+                        <button class="delete-btn" onclick="deleteAnalysis(${analysis.id})">🗑️</button>
+                        <div class="history-date">
+                            分析日時: ${analysis.timestamp}
+                        </div>
+                        <div style="margin-bottom: 10px; color: var(--text-light); font-size: 0.9rem;">
+                            📅 分析期間: ${periodText} （${analysis.dataCount}日分のデータ）
+                        </div>
+                        <div class="history-value" style="white-space: pre-wrap; line-height: 1.8;">
+                            ${analysis.analysis.replace(/\n/g, '<br>')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 分析結果を削除
+        function deleteAnalysis(id) {
+            if (!confirm('この分析結果を削除してもよろしいですか？')) {
+                return;
+            }
+
+            let analyses = JSON.parse(localStorage.getItem('weeklyAnalyses') || '[]');
+            analyses = analyses.filter(a => a.id !== id);
+            localStorage.setItem('weeklyAnalyses', JSON.stringify(analyses));
+            
+            // Firebaseに保存
+            saveToFirebase('analyses', analyses);
+            
+            displayPastAnalyses();
+        }
+    </script>
+</body>
+</html>
