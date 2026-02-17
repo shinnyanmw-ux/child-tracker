@@ -626,6 +626,7 @@
         <div class="tab-container">
             <button class="tab active" onclick="showTab('morning')">🌅 朝の記録</button>
             <button class="tab" onclick="showTab('evening')">🌙 夜の記録</button>
+            <button class="tab" onclick="showTab('schedule')">📅 予定</button>
             <button class="tab" onclick="showTab('history')">📖 履歴</button>
             <button class="tab" onclick="showTab('analysis')">📤 データ出力</button>
         </div>
@@ -701,6 +702,10 @@
                         <div class="checkbox"></div>
                         <span>友達と遊んだ</span>
                     </div>
+                    <div class="checkbox-item" data-activity="一人で遊ぶ時間（1時間以上）">
+                        <div class="checkbox"></div>
+                        <span>🎮 一人で遊ぶ時間（1時間以上）</span>
+                    </div>
                     <div class="checkbox-item" data-activity="その他" id="otherActivityCheckbox">
                         <div class="checkbox"></div>
                         <span>その他</span>
@@ -757,6 +762,78 @@
             </div>
 
             <button class="btn evening-theme" onclick="saveEveningEntry()">💾 夜の記録を保存</button>
+        </div>
+
+        <!-- 予定管理 -->
+        <div id="scheduleTab" style="display: none;">
+            <div class="card">
+                <h2 class="card-title"><span class="icon">📅</span> 週間予定の登録</h2>
+                
+                <div class="form-group">
+                    <label>対象週</label>
+                    <input type="week" id="scheduleWeek" required onchange="updateDayOptions()">
+                </div>
+
+                <div class="form-group">
+                    <label>曜日</label>
+                    <select id="scheduleDayOfWeek" class="login-input" style="width: 100%;">
+                        <option value="">週を選択してください</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>予定項目（複数選択可）</label>
+                    <div class="checkbox-list" id="scheduleItemsList">
+                        <div class="checkbox-item" data-item="学校（4時間）" data-load="2">
+                            <div class="checkbox"></div>
+                            <span>学校（4時間）</span>
+                        </div>
+                        <div class="checkbox-item" data-item="学校（5時間）" data-load="3">
+                            <div class="checkbox"></div>
+                            <span>学校（5時間）</span>
+                        </div>
+                        <div class="checkbox-item" data-item="療育" data-load="2">
+                            <div class="checkbox"></div>
+                            <span>療育</span>
+                        </div>
+                        <div class="checkbox-item" data-item="リタリコ" data-load="2">
+                            <div class="checkbox"></div>
+                            <span>リタリコ</span>
+                        </div>
+                        <div class="checkbox-item" data-item="友達と遊ぶ" data-load="1">
+                            <div class="checkbox"></div>
+                            <span>友達と遊ぶ</span>
+                        </div>
+                        <div class="checkbox-item" data-item="宿題" data-load="1">
+                            <div class="checkbox"></div>
+                            <span>宿題</span>
+                        </div>
+                        <div class="checkbox-item" data-item="一人で遊ぶ時間（1時間以上）" data-load="0">
+                            <div class="checkbox"></div>
+                            <span>🎮 一人で遊ぶ時間（1時間以上）</span>
+                        </div>
+                        <div class="checkbox-item" data-item="その他" data-load="0" id="scheduleOtherCheckbox">
+                            <div class="checkbox"></div>
+                            <span>その他</span>
+                        </div>
+                    </div>
+                    <div id="scheduleOtherInput" style="display: none; margin-top: 15px;">
+                        <input type="text" id="scheduleOtherText" placeholder="その他の予定を入力..." style="width: 100%;">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>メモ（任意）</label>
+                    <textarea id="scheduleMemo" placeholder="時間や詳細を記入...（例：療育 15:00-17:00）"></textarea>
+                </div>
+
+                <button class="btn" onclick="saveSchedule()">💾 予定を保存</button>
+            </div>
+
+            <div class="card">
+                <h2 class="card-title"><span class="icon">📋</span> 週間予定一覧</h2>
+                <div id="scheduleList"></div>
+            </div>
         </div>
 
         <!-- 履歴 -->
@@ -1094,6 +1171,122 @@
             });
         });
 
+        // 朝の記録：日付変更時に既存データを読み込む
+        document.getElementById('morningDate').addEventListener('change', function() {
+            loadMorningEntry(this.value);
+        });
+
+        function loadMorningEntry(date) {
+            const entries = JSON.parse(localStorage.getItem('childDailyEntries') || '[]');
+            const entry = entries.find(e => e.date === date);
+
+            // 既存データがある場合は読み込む
+            if (entry && entry.hasMorning) {
+                // 朝の様子を選択
+                morningData.morningMood = entry.morningMood;
+                document.querySelectorAll('.option-btn.morning-theme[data-field="morningMood"]').forEach(btn => {
+                    if (btn.dataset.value === entry.morningMood) {
+                        btn.classList.add('selected');
+                    } else {
+                        btn.classList.remove('selected');
+                    }
+                });
+
+                // 登校の様子を選択
+                morningData.schoolAttendance = entry.schoolAttendance;
+                document.querySelectorAll('.option-btn.morning-theme[data-field="schoolAttendance"]').forEach(btn => {
+                    if (btn.dataset.value === entry.schoolAttendance) {
+                        btn.classList.add('selected');
+                    } else {
+                        btn.classList.remove('selected');
+                    }
+                });
+
+                // メモを読み込む
+                document.getElementById('morningMemo').value = entry.morningMemo || '';
+            } else {
+                // データがない場合はリセット
+                morningData = { morningMood: '', schoolAttendance: '' };
+                document.querySelectorAll('.option-btn.morning-theme').forEach(b => b.classList.remove('selected'));
+                document.getElementById('morningMemo').value = '';
+            }
+        }
+
+        // 夜の記録：日付変更時に既存データを読み込む
+        document.getElementById('eveningDate').addEventListener('change', function() {
+            loadEveningEntry(this.value);
+        });
+
+        function loadEveningEntry(date) {
+            const entries = JSON.parse(localStorage.getItem('childDailyEntries') || '[]');
+            const entry = entries.find(e => e.date === date);
+
+            // リセット
+            eveningData = { activities: [], routineIssues: [], intensity: '' };
+            document.querySelectorAll('#activitiesList .checkbox-item').forEach(item => item.classList.remove('checked'));
+            document.querySelectorAll('#routineIssuesList .checkbox-item').forEach(item => item.classList.remove('checked'));
+            document.querySelectorAll('.option-btn[data-field="intensity"]').forEach(b => b.classList.remove('selected'));
+            document.getElementById('bedtime').value = '';
+            document.getElementById('eveningNotes').value = '';
+            document.getElementById('otherActivityText').value = '';
+            document.getElementById('otherActivityInput').style.display = 'none';
+            document.getElementById('intensityCard').style.display = 'none';
+
+            // 既存データがある場合は読み込む
+            if (entry && entry.hasEvening) {
+                // 今日やったことを選択
+                if (entry.activities) {
+                    entry.activities.forEach(activity => {
+                        // その他（...）の処理
+                        if (activity.startsWith('その他（')) {
+                            const otherText = activity.match(/その他（(.+)）/)[1];
+                            document.getElementById('otherActivityText').value = otherText;
+                            document.getElementById('otherActivityInput').style.display = 'block';
+                            const otherCheckbox = document.querySelector('#activitiesList .checkbox-item[data-activity="その他"]');
+                            if (otherCheckbox) {
+                                otherCheckbox.classList.add('checked');
+                                eveningData.activities.push('その他');
+                            }
+                        } else {
+                            const checkbox = document.querySelector(`#activitiesList .checkbox-item[data-activity="${activity}"]`);
+                            if (checkbox) {
+                                checkbox.classList.add('checked');
+                                eveningData.activities.push(activity);
+                            }
+                        }
+                    });
+                }
+
+                // 躓いたシーンを選択
+                if (entry.routineIssues && entry.routineIssues.length > 0) {
+                    entry.routineIssues.forEach(issue => {
+                        const checkbox = document.querySelector(`#routineIssuesList .checkbox-item[data-issue="${issue}"]`);
+                        if (checkbox) {
+                            checkbox.classList.add('checked');
+                            eveningData.routineIssues.push(issue);
+                        }
+                    });
+
+                    // 躓き度合を表示・選択
+                    document.getElementById('intensityCard').style.display = 'block';
+                    if (entry.intensity) {
+                        eveningData.intensity = entry.intensity;
+                        document.querySelectorAll('.option-btn[data-field="intensity"]').forEach(btn => {
+                            if (btn.dataset.value === entry.intensity) {
+                                btn.classList.add('selected');
+                            }
+                        });
+                    }
+                }
+
+                // 就寝時間
+                document.getElementById('bedtime').value = entry.bedtime || '';
+
+                // 気になったこと
+                document.getElementById('eveningNotes').value = entry.notes || '';
+            }
+        }
+
         // 朝の記録を保存
         function saveMorningEntry() {
             const date = document.getElementById('morningDate').value;
@@ -1354,11 +1547,265 @@
             displayHistory();
         }
 
+        // 予定管理機能
+        let scheduleItems = [];
+
+        // 予定項目のチェックボックス
+        document.querySelectorAll('#scheduleItemsList .checkbox-item').forEach(item => {
+            item.addEventListener('click', function() {
+                this.classList.toggle('checked');
+                const itemText = this.dataset.item;
+                
+                if (this.classList.contains('checked')) {
+                    if (!scheduleItems.includes(itemText)) {
+                        scheduleItems.push(itemText);
+                    }
+                } else {
+                    scheduleItems = scheduleItems.filter(i => i !== itemText);
+                }
+
+                // その他が選択された場合、入力欄を表示
+                if (itemText === 'その他') {
+                    const otherInput = document.getElementById('scheduleOtherInput');
+                    if (this.classList.contains('checked')) {
+                        otherInput.style.display = 'block';
+                    } else {
+                        otherInput.style.display = 'none';
+                        document.getElementById('scheduleOtherText').value = '';
+                    }
+                }
+            });
+        });
+
+        // 週の初期値を設定
+        function initScheduleWeek() {
+            if (!document.getElementById('scheduleWeek').value) {
+                const today = new Date();
+                const year = today.getFullYear();
+                const weekNum = getWeekNumber(today);
+                document.getElementById('scheduleWeek').value = `${year}-W${String(weekNum).padStart(2, '0')}`;
+                updateDayOptions();
+            }
+        }
+
+        // 週が選択されたら曜日の選択肢を更新
+        function updateDayOptions() {
+            const weekInput = document.getElementById('scheduleWeek').value;
+            const daySelect = document.getElementById('scheduleDayOfWeek');
+            
+            if (!weekInput) {
+                daySelect.innerHTML = '<option value="">週を選択してください</option>';
+                return;
+            }
+
+            const startDate = getWeekStartDate(weekInput);
+            const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+            
+            let options = '';
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(startDate);
+                date.setDate(startDate.getDate() + i);
+                const dayOfWeek = date.getDay();
+                const month = date.getMonth() + 1;
+                const day = date.getDate();
+                
+                options += `<option value="${dayOfWeek}">${dayNames[dayOfWeek]} ${month}/${day}</option>`;
+            }
+            
+            daySelect.innerHTML = options;
+        }
+
+        // 週番号を取得
+        function getWeekNumber(date) {
+            const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+            const dayNum = d.getUTCDay() || 7;
+            d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+            return Math.ceil((((d - yearStart) / 86400000) + 1)/7);
+        }
+
+        // 予定を保存
+        function saveSchedule() {
+            const week = document.getElementById('scheduleWeek').value;
+            const dayOfWeek = document.getElementById('scheduleDayOfWeek').value;
+            const memo = document.getElementById('scheduleMemo').value;
+            const otherText = document.getElementById('scheduleOtherText').value;
+
+            if (!week) {
+                alert('対象週を選択してください');
+                return;
+            }
+
+            if (scheduleItems.length === 0) {
+                alert('予定項目を選択してください');
+                return;
+            }
+
+            // その他が選択されている場合、テキストを追加
+            let items = [...scheduleItems];
+            if (items.includes('その他') && otherText) {
+                items = items.filter(i => i !== 'その他');
+                items.push(`その他（${otherText}）`);
+            }
+
+            // 負荷を計算
+            let loadLevel = 0;
+            items.forEach(item => {
+                // 「その他（...）」の場合は「その他」で検索
+                let searchItem = item;
+                if (item.startsWith('その他（')) {
+                    searchItem = 'その他';
+                }
+                
+                const checkbox = document.querySelector(`#scheduleItemsList .checkbox-item[data-item="${searchItem}"]`);
+                if (checkbox) {
+                    loadLevel += parseInt(checkbox.dataset.load || 0);
+                }
+            });
+
+            const schedule = {
+                id: Date.now(),
+                week: week,
+                dayOfWeek: dayOfWeek,
+                items: items,
+                memo: memo,
+                loadLevel: loadLevel
+            };
+
+            // Firebaseに保存
+            let schedules = JSON.parse(localStorage.getItem('weeklySchedules') || '[]');
+            
+            // 同じ週・曜日の予定があれば上書き
+            const existingIndex = schedules.findIndex(s => s.week === week && s.dayOfWeek === dayOfWeek);
+            if (existingIndex >= 0) {
+                schedules[existingIndex] = schedule;
+            } else {
+                schedules.push(schedule);
+            }
+
+            schedules.sort((a, b) => {
+                if (a.week !== b.week) return a.week.localeCompare(b.week);
+                return parseInt(a.dayOfWeek) - parseInt(b.dayOfWeek);
+            });
+
+            localStorage.setItem('weeklySchedules', JSON.stringify(schedules));
+            saveToFirebase('schedules', schedules);
+
+            // リセット
+            scheduleItems = [];
+            document.querySelectorAll('#scheduleItemsList .checkbox-item').forEach(item => item.classList.remove('checked'));
+            document.getElementById('scheduleMemo').value = '';
+            document.getElementById('scheduleOtherText').value = '';
+            document.getElementById('scheduleOtherInput').style.display = 'none';
+
+            alert('✅ 予定を保存しました！');
+            displaySchedules();
+        }
+
+        // 予定一覧を表示
+        function displaySchedules() {
+            const schedules = JSON.parse(localStorage.getItem('weeklySchedules') || '[]');
+            const listElement = document.getElementById('scheduleList');
+
+            if (schedules.length === 0) {
+                listElement.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📅</div>
+                        <p>まだ予定がありません</p>
+                        <p>週間予定を登録しましょう</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // 週ごとにグループ化
+            const grouped = {};
+            schedules.forEach(schedule => {
+                if (!grouped[schedule.week]) {
+                    grouped[schedule.week] = [];
+                }
+                grouped[schedule.week].push(schedule);
+            });
+
+            const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+
+            listElement.innerHTML = Object.keys(grouped).sort().reverse().map(week => {
+                const weekSchedules = grouped[week];
+                const weekDate = getWeekStartDate(week);
+                
+                return `
+                    <div style="margin-bottom: 30px;">
+                        <h3 style="color: var(--accent); margin-bottom: 15px;">${formatWeekRange(week)}</h3>
+                        ${weekSchedules.map(schedule => {
+                            const loadColor = schedule.loadLevel >= 5 ? 'var(--alert)' : schedule.loadLevel >= 3 ? 'var(--warning)' : 'var(--success)';
+                            const loadText = schedule.loadLevel >= 5 ? '高' : schedule.loadLevel >= 3 ? '中' : '低';
+                            
+                            return `
+                                <div style="background: var(--bg-card); border-radius: 12px; padding: 15px; margin-bottom: 10px; border-left: 4px solid ${loadColor};">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                        <div style="font-weight: 600; color: var(--text-dark);">
+                                            ${dayNames[schedule.dayOfWeek]} ${schedule.dayOfWeek !== '0' && schedule.dayOfWeek !== '6' ? '曜日' : ''}
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 10px;">
+                                            <span style="background: ${loadColor}; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.85rem;">
+                                                負荷：${loadText}
+                                            </span>
+                                            <button class="delete-btn" onclick="deleteSchedule(${schedule.id})">🗑️</button>
+                                        </div>
+                                    </div>
+                                    <div style="color: var(--text-dark); margin-bottom: 8px;">
+                                        ${schedule.items.map(item => `• ${item}`).join('<br>')}
+                                    </div>
+                                    ${schedule.memo ? `
+                                        <div style="color: var(--text-light); font-size: 0.9rem; padding: 8px; background: var(--bg-main); border-radius: 8px;">
+                                            ${schedule.memo}
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 週の開始日を取得
+        function getWeekStartDate(weekString) {
+            const [year, week] = weekString.split('-W');
+            const date = new Date(year, 0, 1 + (week - 1) * 7);
+            const day = date.getDay();
+            const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+            return new Date(date.setDate(diff));
+        }
+
+        // 週の範囲をフォーマット
+        function formatWeekRange(weekString) {
+            const startDate = getWeekStartDate(weekString);
+            const endDate = new Date(startDate);
+            endDate.setDate(startDate.getDate() + 6);
+            
+            return `${startDate.getMonth() + 1}月${startDate.getDate()}日〜${endDate.getMonth() + 1}月${endDate.getDate()}日の週`;
+        }
+
+        // 予定を削除
+        function deleteSchedule(id) {
+            if (!confirm('この予定を削除してもよろしいですか？')) {
+                return;
+            }
+
+            let schedules = JSON.parse(localStorage.getItem('weeklySchedules') || '[]');
+            schedules = schedules.filter(s => s.id !== id);
+            localStorage.setItem('weeklySchedules', JSON.stringify(schedules));
+            saveToFirebase('schedules', schedules);
+            displaySchedules();
+        }
+
         // タブの切り替え
         function showTab(tab) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.getElementById('morningTab').style.display = 'none';
             document.getElementById('eveningTab').style.display = 'none';
+            document.getElementById('scheduleTab').style.display = 'none';
             document.getElementById('historyTab').style.display = 'none';
             document.getElementById('analysisTab').style.display = 'none';
 
@@ -1368,13 +1815,18 @@
             } else if (tab === 'evening') {
                 document.getElementById('eveningTab').style.display = 'block';
                 document.querySelectorAll('.tab')[1].classList.add('active');
+            } else if (tab === 'schedule') {
+                document.getElementById('scheduleTab').style.display = 'block';
+                document.querySelectorAll('.tab')[2].classList.add('active');
+                initScheduleWeek();
+                displaySchedules();
             } else if (tab === 'history') {
                 document.getElementById('historyTab').style.display = 'block';
-                document.querySelectorAll('.tab')[2].classList.add('active');
+                document.querySelectorAll('.tab')[3].classList.add('active');
                 displayHistory();
             } else if (tab === 'analysis') {
                 document.getElementById('analysisTab').style.display = 'block';
-                document.querySelectorAll('.tab')[3].classList.add('active');
+                document.querySelectorAll('.tab')[4].classList.add('active');
                 
                 // デフォルトで過去1週間を設定
                 if (!document.getElementById('analysisStartDate').value) {
@@ -1412,19 +1864,31 @@
             }
 
             const entries = JSON.parse(localStorage.getItem('childDailyEntries') || '[]');
+            const schedules = JSON.parse(localStorage.getItem('weeklySchedules') || '[]');
             
-            if (entries.length === 0) {
-                alert('出力するデータがありません。記録を追加してください。');
-                return;
-            }
-
             // 指定期間のデータを取得
             const periodData = entries.filter(entry => {
                 const entryDate = new Date(entry.date);
                 return entryDate >= startDate && entryDate <= endDate;
             });
 
-            if (periodData.length === 0) {
+            // 指定期間の予定を取得
+            const periodSchedules = [];
+            schedules.forEach(schedule => {
+                const weekStartDate = getWeekStartDate(schedule.week);
+                for (let i = 0; i < 7; i++) {
+                    const date = new Date(weekStartDate);
+                    date.setDate(weekStartDate.getDate() + i);
+                    if (date.getDay() === parseInt(schedule.dayOfWeek) && date >= startDate && date <= endDate) {
+                        periodSchedules.push({
+                            date: date.toISOString().split('T')[0],
+                            schedule: schedule
+                        });
+                    }
+                }
+            });
+
+            if (periodData.length === 0 && periodSchedules.length === 0) {
                 alert('指定期間にデータがありません。');
                 return;
             }
@@ -1432,13 +1896,42 @@
             // 読みやすい形式でデータを整形
             let output = `【子どもの記録データ】\n`;
             output += `期間: ${startDateInput} 〜 ${endDateInput}\n`;
-            output += `記録日数: ${periodData.length}日分\n`;
-            output += `\n${'='.repeat(50)}\n\n`;
+            output += `記録日数: ${periodData.length}日分`;
+            if (periodSchedules.length > 0) {
+                output += `、予定: ${periodSchedules.length}日分`;
+            }
+            output += `\n\n${'='.repeat(50)}\n\n`;
 
-            periodData.forEach(entry => {
-                output += `■ ${entry.date}\n\n`;
+            // 日付ごとにデータを統合
+            const allDates = new Set([
+                ...periodData.map(e => e.date),
+                ...periodSchedules.map(s => s.date)
+            ]);
+
+            const sortedDates = Array.from(allDates).sort();
+
+            sortedDates.forEach(date => {
+                const entry = periodData.find(e => e.date === date);
+                const scheduleData = periodSchedules.find(s => s.date === date);
                 
-                if (entry.hasMorning) {
+                output += `■ ${date}\n\n`;
+                
+                // 予定
+                if (scheduleData) {
+                    const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+                    const dayOfWeek = dayNames[scheduleData.schedule.dayOfWeek];
+                    const loadText = scheduleData.schedule.loadLevel >= 5 ? '高' : scheduleData.schedule.loadLevel >= 3 ? '中' : '低';
+                    
+                    output += `【予定】(${dayOfWeek}曜日、負荷: ${loadText})\n`;
+                    output += `  ${scheduleData.schedule.items.join(', ')}\n`;
+                    if (scheduleData.schedule.memo) {
+                        output += `  メモ: ${scheduleData.schedule.memo}\n`;
+                    }
+                    output += `\n`;
+                }
+                
+                // 朝の記録
+                if (entry && entry.hasMorning) {
                     output += `【朝の記録】\n`;
                     output += `  朝の様子: ${entry.morningMood}\n`;
                     output += `  登校の様子: ${entry.schoolAttendance}\n`;
@@ -1448,7 +1941,8 @@
                     output += `\n`;
                 }
                 
-                if (entry.hasEvening) {
+                // 夜の記録
+                if (entry && entry.hasEvening) {
                     output += `【夜の記録】\n`;
                     output += `  今日やったこと: ${entry.activities.join(', ')}\n`;
                     
