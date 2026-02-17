@@ -659,6 +659,13 @@
                 </div>
             </div>
 
+            <div class="card">
+                <h2 class="card-title morning"><span class="icon">📝</span> メモ</h2>
+                <div class="form-group">
+                    <textarea id="morningMemo" placeholder="朝の様子で気になったことを記録..."></textarea>
+                </div>
+            </div>
+
             <button class="btn morning-theme" onclick="saveMorningEntry()">💾 朝の記録を保存</button>
         </div>
 
@@ -1090,6 +1097,7 @@
         // 朝の記録を保存
         function saveMorningEntry() {
             const date = document.getElementById('morningDate').value;
+            const morningMemo = document.getElementById('morningMemo').value;
 
             if (!date) {
                 alert('日付を選択してください');
@@ -1109,6 +1117,7 @@
             const morningEntry = {
                 morningMood: morningData.morningMood,
                 schoolAttendance: morningData.schoolAttendance,
+                morningMemo: morningMemo,
                 hasMorning: true
             };
 
@@ -1139,6 +1148,7 @@
             
             // リセット
             morningData = { morningMood: '', schoolAttendance: '' };
+            document.getElementById('morningMemo').value = '';
             document.querySelectorAll('.option-btn.morning-theme').forEach(b => b.classList.remove('selected'));
             
             alert('✅ 朝の記録を保存しました！');
@@ -1267,6 +1277,12 @@
                                 <div class="history-label">登校の様子</div>
                                 <div class="history-value">${entry.schoolAttendance}</div>
                             </div>
+                            ${entry.morningMemo ? `
+                                <div class="history-section">
+                                    <div class="history-label">メモ</div>
+                                    <div class="history-value">${entry.morningMemo}</div>
+                                </div>
+                            ` : ''}
                         </div>
                     `;
                 }
@@ -1425,7 +1441,11 @@
                 if (entry.hasMorning) {
                     output += `【朝の記録】\n`;
                     output += `  朝の様子: ${entry.morningMood}\n`;
-                    output += `  登校の様子: ${entry.schoolAttendance}\n\n`;
+                    output += `  登校の様子: ${entry.schoolAttendance}\n`;
+                    if (entry.morningMemo) {
+                        output += `  メモ: ${entry.morningMemo}\n`;
+                    }
+                    output += `\n`;
                 }
                 
                 if (entry.hasEvening) {
