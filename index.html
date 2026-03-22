@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>子どもの日々の記録</title>
+    <title>子どもの日々の記録 v1.1.0</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Klee+One:wght@400;600&display=swap" rel="stylesheet">
     
     <!-- Firebase SDKs -->
@@ -577,6 +577,24 @@
             border-color: var(--accent);
             background: white;
         }
+
+        .version-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--accent), #FF8FB9);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-top: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .version-badge:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 10px rgba(255, 107, 157, 0.3);
+        }
     </style>
 </head>
 <body>
@@ -619,6 +637,7 @@
         <header>
             <h1>📔 子どもの日々の記録</h1>
             <p class="subtitle">朝と夜の様子を記録して、成長をサポート</p>
+            <span class="version-badge" onclick="showTab('version')">v1.1.0</span>
             <p class="subtitle" id="userEmail" style="margin-top: 10px; font-weight: 600;"></p>
             <button onclick="handleLogout()" class="logout-btn">ログアウト</button>
         </header>
@@ -629,6 +648,7 @@
             <button class="tab" onclick="showTab('schedule')">📅 予定</button>
             <button class="tab" onclick="showTab('history')">📖 履歴</button>
             <button class="tab" onclick="showTab('analysis')">📤 データ出力</button>
+            <button class="tab" onclick="showTab('version')">ℹ️ バージョン</button>
         </div>
 
         <!-- 朝の記録 -->
@@ -652,11 +672,12 @@
 
             <div class="card">
                 <h2 class="card-title morning"><span class="icon">🏫</span> 登校の様子</h2>
-                <div class="option-grid">
+                <div class="option-grid" id="schoolAttendanceGrid">
                     <div class="option-btn morning-theme" data-field="schoolAttendance" data-value="すんなり">すんなり</div>
                     <div class="option-btn morning-theme" data-field="schoolAttendance" data-value="グズグズしつつ行った">グズグズしつつ行った</div>
                     <div class="option-btn morning-theme" data-field="schoolAttendance" data-value="早退or遅刻して行った">早退or遅刻して行った</div>
                     <div class="option-btn morning-theme" data-field="schoolAttendance" data-value="休んだ">休んだ</div>
+                    <div class="option-btn morning-theme" data-field="schoolAttendance" data-value="おやすみ" id="weekendOption" style="display: none;">おやすみ</div>
                 </div>
             </div>
 
@@ -751,6 +772,13 @@
                 <h2 class="card-title evening"><span class="icon">🛌</span> 就寝時間</h2>
                 <div class="form-group">
                     <input type="time" id="bedtime" required>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="card-title evening"><span class="icon">✨</span> 褒めポイント</h2>
+                <div class="form-group">
+                    <textarea id="praisePoints" placeholder="今日できたこと、頑張ったこと、良かったことを記録しましょう..."></textarea>
                 </div>
             </div>
 
@@ -895,6 +923,38 @@
                     <button class="btn" onclick="copyToClipboard()" style="margin-top: 15px;">
                         📋 クリップボードにコピー
                     </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- バージョン履歴 -->
+        <div id="versionTab" style="display: none;">
+            <div class="card">
+                <h2 class="card-title"><span class="icon">ℹ️</span> バージョン情報</h2>
+                <p style="color: var(--text-light); margin-bottom: 20px;">
+                    アプリの更新履歴です
+                </p>
+                
+                <div style="border-left: 4px solid var(--accent); padding-left: 20px; margin-bottom: 30px;">
+                    <h3 style="color: var(--accent); margin-bottom: 10px;">v1.1.0 <span style="font-size: 0.85rem; color: var(--text-light);">- 2025/02/19</span></h3>
+                    <ul style="color: var(--text-dark); line-height: 1.8; margin-left: 20px;">
+                        <li>✨ 土日の登校の様子に「おやすみ」選択肢を追加</li>
+                        <li>✨ 一時保存機能を追加（全項目入力不要）</li>
+                        <li>✨ 夜の記録に「褒めポイント」欄を追加</li>
+                        <li>✨ バージョン履歴表示機能を追加</li>
+                    </ul>
+                </div>
+
+                <div style="border-left: 4px solid var(--text-light); padding-left: 20px;">
+                    <h3 style="color: var(--text-dark); margin-bottom: 10px;">v1.0.0 <span style="font-size: 0.85rem; color: var(--text-light);">- 2025/01/15</span></h3>
+                    <ul style="color: var(--text-dark); line-height: 1.8; margin-left: 20px;">
+                        <li>🎉 初回リリース</li>
+                        <li>📝 朝・夜の記録機能</li>
+                        <li>📅 予定管理機能</li>
+                        <li>📖 履歴表示機能</li>
+                        <li>📤 データ出力機能</li>
+                        <li>🔐 Firebase認証・データベース連携</li>
+                    </ul>
                 </div>
             </div>
         </div>
@@ -1078,10 +1138,15 @@
             }
         }
 
-        // 今日の日付を設定
+        // 今日の日付を設定 + 土日判定
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('morningDate').value = today;
         document.getElementById('eveningDate').value = today;
+        
+        // ページ読み込み時に土日判定を実行（認証後にも実行）
+        setTimeout(() => {
+            checkWeekend(today);
+        }, 100);
 
         // 選択データ
         let morningData = {
@@ -1171,10 +1236,29 @@
             });
         });
 
-        // 朝の記録：日付変更時に既存データを読み込む
+        // 朝の記録：日付変更時に既存データを読み込む + 土日判定
         document.getElementById('morningDate').addEventListener('change', function() {
+            checkWeekend(this.value);
             loadMorningEntry(this.value);
         });
+
+        // 土日判定して「おやすみ」オプションを表示/非表示
+        function checkWeekend(dateString) {
+            const date = new Date(dateString);
+            const dayOfWeek = date.getDay(); // 0=日曜, 6=土曜
+            const weekendOption = document.getElementById('weekendOption');
+            const schoolOptions = document.querySelectorAll('#schoolAttendanceGrid .option-btn:not(#weekendOption)');
+            
+            if (dayOfWeek === 0 || dayOfWeek === 6) {
+                // 土日の場合
+                weekendOption.style.display = 'block';
+                schoolOptions.forEach(opt => opt.style.display = 'none');
+            } else {
+                // 平日の場合
+                weekendOption.style.display = 'none';
+                schoolOptions.forEach(opt => opt.style.display = 'block');
+            }
+        }
 
         function loadMorningEntry(date) {
             const entries = JSON.parse(localStorage.getItem('childDailyEntries') || '[]');
@@ -1227,6 +1311,7 @@
             document.querySelectorAll('#routineIssuesList .checkbox-item').forEach(item => item.classList.remove('checked'));
             document.querySelectorAll('.option-btn[data-field="intensity"]').forEach(b => b.classList.remove('selected'));
             document.getElementById('bedtime').value = '';
+            document.getElementById('praisePoints').value = '';
             document.getElementById('eveningNotes').value = '';
             document.getElementById('otherActivityText').value = '';
             document.getElementById('otherActivityInput').style.display = 'none';
@@ -1282,12 +1367,15 @@
                 // 就寝時間
                 document.getElementById('bedtime').value = entry.bedtime || '';
 
+                // 褒めポイント
+                document.getElementById('praisePoints').value = entry.praisePoints || '';
+
                 // 気になったこと
                 document.getElementById('eveningNotes').value = entry.notes || '';
             }
         }
 
-        // 朝の記録を保存
+        // 朝の記録を保存（一時保存対応）
         function saveMorningEntry() {
             const date = document.getElementById('morningDate').value;
             const morningMemo = document.getElementById('morningMemo').value;
@@ -1297,19 +1385,15 @@
                 return;
             }
 
-            if (!morningData.morningMood) {
-                alert('朝の様子を選択してください');
-                return;
-            }
-
-            if (!morningData.schoolAttendance) {
-                alert('登校の様子を選択してください');
+            // 一時保存: 朝の様子または登校の様子のどちらかがあればOK
+            if (!morningData.morningMood && !morningData.schoolAttendance) {
+                alert('朝の様子または登校の様子を少なくとも1つ選択してください');
                 return;
             }
 
             const morningEntry = {
-                morningMood: morningData.morningMood,
-                schoolAttendance: morningData.schoolAttendance,
+                morningMood: morningData.morningMood || '',
+                schoolAttendance: morningData.schoolAttendance || '',
                 morningMemo: morningMemo,
                 hasMorning: true
             };
@@ -1348,10 +1432,11 @@
             showTab('history');
         }
 
-        // 夜の記録を保存
+        // 夜の記録を保存（褒めポイント追加 + 一時保存対応）
         function saveEveningEntry() {
             const date = document.getElementById('eveningDate').value;
             const bedtime = document.getElementById('bedtime').value;
+            const praisePoints = document.getElementById('praisePoints').value;
             const notes = document.getElementById('eveningNotes').value;
             const otherActivityText = document.getElementById('otherActivityText').value;
 
@@ -1360,13 +1445,9 @@
                 return;
             }
 
-            if (eveningData.activities.length === 0) {
-                alert('今日やったことを選択してください');
-                return;
-            }
-
-            if (!bedtime) {
-                alert('就寝時間を入力してください');
+            // 一時保存: 最低限、活動または就寝時間のどちらかがあればOK
+            if (eveningData.activities.length === 0 && !bedtime) {
+                alert('今日やったことまたは就寝時間を少なくとも1つ入力してください');
                 return;
             }
 
@@ -1386,7 +1467,8 @@
                 activities: activities,
                 routineIssues: [...eveningData.routineIssues],
                 intensity: eveningData.intensity,
-                bedtime: bedtime,
+                bedtime: bedtime || '',
+                praisePoints: praisePoints,
                 notes: notes
             };
 
@@ -1420,6 +1502,7 @@
             // リセット
             eveningData = { activities: [], routineIssues: [], intensity: '' };
             document.getElementById('bedtime').value = '';
+            document.getElementById('praisePoints').value = '';
             document.getElementById('eveningNotes').value = '';
             document.getElementById('otherActivityText').value = '';
             document.getElementById('otherActivityInput').style.display = 'none';
@@ -1505,6 +1588,12 @@
                                 <div class="history-label">就寝時間</div>
                                 <div class="history-value">${entry.bedtime}</div>
                             </div>
+                            ${entry.praisePoints ? `
+                                <div class="history-section">
+                                    <div class="history-label">✨ 褒めポイント</div>
+                                    <div class="history-value" style="background: linear-gradient(135deg, #FFF9E6, #FFFACD); border-left: 3px solid #FFD700;">${entry.praisePoints}</div>
+                                </div>
+                            ` : ''}
                             ${entry.notes ? `
                                 <div class="history-section">
                                     <div class="history-label">気になったこと</div>
@@ -1808,10 +1897,16 @@
             document.getElementById('scheduleTab').style.display = 'none';
             document.getElementById('historyTab').style.display = 'none';
             document.getElementById('analysisTab').style.display = 'none';
+            document.getElementById('versionTab').style.display = 'none';
 
             if (tab === 'morning') {
                 document.getElementById('morningTab').style.display = 'block';
                 document.querySelectorAll('.tab')[0].classList.add('active');
+                // 初期表示時に土日判定
+                const currentDate = document.getElementById('morningDate').value;
+                if (currentDate) {
+                    checkWeekend(currentDate);
+                }
             } else if (tab === 'evening') {
                 document.getElementById('eveningTab').style.display = 'block';
                 document.querySelectorAll('.tab')[1].classList.add('active');
@@ -1832,6 +1927,9 @@
                 if (!document.getElementById('analysisStartDate').value) {
                     setQuickPeriod(7);
                 }
+            } else if (tab === 'version') {
+                document.getElementById('versionTab').style.display = 'block';
+                document.querySelectorAll('.tab')[5].classList.add('active');
             }
         }
 
@@ -1951,6 +2049,10 @@
                     }
                     
                     output += `  就寝時間: ${entry.bedtime}\n`;
+                    
+                    if (entry.praisePoints) {
+                        output += `  褒めポイント: ${entry.praisePoints}\n`;
+                    }
                     
                     if (entry.notes) {
                         output += `  気になったこと: ${entry.notes}\n`;
