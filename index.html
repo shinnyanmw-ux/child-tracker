@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>子どもの日々の記録 v1.1.0</title>
+    <title>子どもの日々の記録 v1.2.0</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Klee+One:wght@400;600&display=swap" rel="stylesheet">
     
     <!-- Firebase SDKs -->
@@ -434,13 +434,35 @@
             padding: 8px;
             border-radius: 8px;
             transition: all 0.3s ease;
-            float: right;
             font-size: 1.2rem;
         }
 
         .delete-btn:hover {
             background: #FFE5E5;
             transform: scale(1.1);
+        }
+
+        .edit-btn {
+            background: none;
+            border: none;
+            color: var(--accent);
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-size: 1.2rem;
+            margin-right: 5px;
+        }
+
+        .edit-btn:hover {
+            background: #FFE5EC;
+            transform: scale(1.1);
+        }
+
+        .history-actions {
+            float: right;
+            display: flex;
+            gap: 5px;
         }
 
         .empty-state {
@@ -637,7 +659,7 @@
         <header>
             <h1>📔 子どもの日々の記録</h1>
             <p class="subtitle">朝と夜の様子を記録して、成長をサポート</p>
-            <span class="version-badge" onclick="showTab('version')">v1.1.0</span>
+            <span class="version-badge" onclick="showTab('version')">v1.2.0</span>
             <p class="subtitle" id="userEmail" style="margin-top: 10px; font-weight: 600;"></p>
             <button onclick="handleLogout()" class="logout-btn">ログアウト</button>
         </header>
@@ -936,7 +958,15 @@
                 </p>
                 
                 <div style="border-left: 4px solid var(--accent); padding-left: 20px; margin-bottom: 30px;">
-                    <h3 style="color: var(--accent); margin-bottom: 10px;">v1.1.0 <span style="font-size: 0.85rem; color: var(--text-light);">- 2025/02/19</span></h3>
+                    <h3 style="color: var(--accent); margin-bottom: 10px;">v1.2.0 <span style="font-size: 0.85rem; color: var(--text-light);">- 2025/02/19</span></h3>
+                    <ul style="color: var(--text-dark); line-height: 1.8; margin-left: 20px;">
+                        <li>✏️ 履歴画面に「編集」ボタンを追加</li>
+                        <li>✏️ 過去の記録を簡単に編集できるように改善</li>
+                    </ul>
+                </div>
+
+                <div style="border-left: 4px solid var(--text-light); padding-left: 20px; margin-bottom: 30px;">
+                    <h3 style="color: var(--text-dark); margin-bottom: 10px;">v1.1.0 <span style="font-size: 0.85rem; color: var(--text-light);">- 2025/02/19</span></h3>
                     <ul style="color: var(--text-dark); line-height: 1.8; margin-left: 20px;">
                         <li>✨ 土日の登校の様子に「おやすみ」選択肢を追加</li>
                         <li>✨ 一時保存機能を追加（全項目入力不要）</li>
@@ -1534,7 +1564,10 @@
             historyList.innerHTML = entries.map(entry => {
                 let html = `
                     <div class="history-item">
-                        <button class="delete-btn" onclick="deleteEntry('${entry.date}')">🗑️</button>
+                        <div class="history-actions">
+                            <button class="edit-btn" onclick="editEntry('${entry.date}')" title="編集">✏️</button>
+                            <button class="delete-btn" onclick="deleteEntry('${entry.date}')" title="削除">🗑️</button>
+                        </div>
                         <div class="history-date">${formatDate(entry.date)}</div>
                 `;
 
@@ -1618,6 +1651,42 @@
             const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
             const weekday = weekdays[date.getDay()];
             return `${year}年${month}月${day}日（${weekday}）`;
+        }
+
+        // エントリーを編集
+        function editEntry(date) {
+            const entries = JSON.parse(localStorage.getItem('childDailyEntries') || '[]');
+            const entry = entries.find(e => e.date === date);
+            
+            if (!entry) {
+                alert('記録が見つかりませんでした');
+                return;
+            }
+
+            // 朝の記録があれば朝タブへ、なければ夜タブへ
+            if (entry.hasMorning) {
+                // 朝タブに切り替え
+                showTab('morning');
+                // 日付を設定して、データを読み込む
+                document.getElementById('morningDate').value = date;
+                checkWeekend(date);
+                loadMorningEntry(date);
+                
+                // もし夜の記録もあれば、夜タブも準備しておく
+                if (entry.hasEvening) {
+                    document.getElementById('eveningDate').value = date;
+                    // 夜タブに切り替えた時に自動で読み込まれる
+                }
+            } else if (entry.hasEvening) {
+                // 夜タブに切り替え
+                showTab('evening');
+                // 日付を設定して、データを読み込む
+                document.getElementById('eveningDate').value = date;
+                loadEveningEntry(date);
+            }
+            
+            // スクロールをトップに
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         // エントリーを削除
