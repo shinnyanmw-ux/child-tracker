@@ -1191,13 +1191,32 @@ body {
 
 <!-- ままのひとりじかん 時間選択モーダル -->
 <div class="modal-overlay" id="mamaCardOverlay">
-  <div class="modal" style="max-width:280px;text-align:center">
+  <div class="modal" style="max-width:300px;text-align:center">
     <button class="modal-close" onclick="closeMamaCard()">✕</button>
-    <div class="modal-title">🔕 なんぷんにする？</div>
-    <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
-      <button onclick="applyMamaCard(30)" style="padding:12px;border-radius:12px;border:2px solid #CC3377;background:#FFF0F6;font-family:inherit;font-size:15px;font-weight:900;color:#CC3377;cursor:pointer">30分</button>
-      <button onclick="applyMamaCard(45)" style="padding:12px;border-radius:12px;border:2px solid #CC3377;background:#FFF0F6;font-family:inherit;font-size:15px;font-weight:900;color:#CC3377;cursor:pointer">45分</button>
-      <button onclick="applyMamaCard(60)" style="padding:12px;border-radius:12px;border:2px solid #CC3377;background:#FFF0F6;font-family:inherit;font-size:15px;font-weight:900;color:#CC3377;cursor:pointer">1時間</button>
+    <div class="modal-title">🔕 ままのひとりじかん</div>
+    <div style="display:flex;flex-direction:column;gap:14px;margin-top:8px">
+      <div style="display:flex;align-items:center;gap:10px;justify-content:center">
+        <div style="text-align:center">
+          <div style="font-size:11px;font-weight:700;color:#AAA;margin-bottom:4px">はじまり</div>
+          <div style="display:flex;align-items:center;gap:4px">
+            <select class="ampm-select" id="mamaStartAmpm"><option>AM</option><option>PM</option></select>
+            <select class="ampm-select" id="mamaStartH" style="width:48px"></select>
+            <span style="font-weight:900">:</span>
+            <select class="ampm-select" id="mamaStartM" style="width:52px"></select>
+          </div>
+        </div>
+        <div style="font-size:18px;font-weight:900;color:#AAA;margin-top:16px">〜</div>
+        <div style="text-align:center">
+          <div style="font-size:11px;font-weight:700;color:#AAA;margin-bottom:4px">おわり</div>
+          <div style="display:flex;align-items:center;gap:4px">
+            <select class="ampm-select" id="mamaEndAmpm"><option>AM</option><option>PM</option></select>
+            <select class="ampm-select" id="mamaEndH" style="width:48px"></select>
+            <span style="font-weight:900">:</span>
+            <select class="ampm-select" id="mamaEndM" style="width:52px"></select>
+          </div>
+        </div>
+      </div>
+      <button onclick="applyMamaCard()" style="padding:12px;border-radius:12px;border:2px solid #CC3377;background:#FFF0F6;font-family:inherit;font-size:15px;font-weight:900;color:#CC3377;cursor:pointer">🔕 この時間にする</button>
       <button onclick="closeMamaCard()" style="padding:10px;border-radius:12px;border:none;background:#F5F5F5;font-family:inherit;font-size:13px;font-weight:700;color:#AAA;cursor:pointer">やめる</button>
     </div>
   </div>
@@ -2060,19 +2079,73 @@ function openMamaCard(idx) {
   if (_mamaCardState.usedToday >= 3) return;
   if (idx !== _mamaCardState.usedToday) return;
   _mamaCardState._pendingCard = idx;
+
+  // セレクトの選択肢を初期化
+  const hSel = document.getElementById('mamaStartH');
+  const eSel = document.getElementById('mamaEndH');
+  const mSel = document.getElementById('mamaStartM');
+  const emSel= document.getElementById('mamaEndM');
+  if (hSel.options.length === 0) {
+    for (let h = 1; h <= 12; h++) {
+      hSel.add(new Option(h, h));
+      eSel.add(new Option(h, h));
+    }
+    ['00','05','10','15','20','25','30','35','40','45','50','55'].forEach(m => {
+      mSel.add(new Option(m, m));
+      emSel.add(new Option(m, m));
+    });
+  }
+
+  // デフォルト：今の時刻〜30分後
+  const now = new Date();
+  const end = new Date(now.getTime() + 30 * 60000);
+  setTimePicker('mamaStart', now.getHours(), now.getMinutes());
+  setTimePicker('mamaEnd',   end.getHours(), end.getMinutes());
+
   document.getElementById('mamaCardOverlay').classList.add('open');
 }
+
+function setTimePicker(prefix, h24, m) {
+  const ampm = h24 < 12 ? 'AM' : 'PM';
+  const h12  = h24 === 0 ? 12 : h24 > 12 ? h24 - 12 : h24;
+  // 分を5分単位に丸める
+  const m5   = Math.round(m / 5) * 5 % 60;
+  document.getElementById(prefix + 'Ampm').value = ampm;
+  document.getElementById(prefix + 'H').value    = h12;
+  document.getElementById(prefix + 'M').value    = String(m5).padStart(2, '0');
+}
+
 function closeMamaCard() {
   document.getElementById('mamaCardOverlay').classList.remove('open');
 }
-function applyMamaCard(minutes) {
+
+function applyMamaCard() {
+  // 時刻を読み取る
+  const sh = parseInt(document.getElementById('mamaStartH').value);
+  const sm = parseInt(document.getElementById('mamaStartM').value);
+  const sa = document.getElementById('mamaStartAmpm').value;
+  const eh = parseInt(document.getElementById('mamaEndH').value);
+  const em = parseInt(document.getElementById('mamaEndM').value);
+  const ea = document.getElementById('mamaEndAmpm').value;
+
+  const s24 = (sa === 'AM' ? (sh === 12 ? 0 : sh) : (sh === 12 ? 12 : sh + 12));
+  const e24 = (ea === 'AM' ? (eh === 12 ? 0 : eh) : (eh === 12 ? 12 : eh + 12));
+
+  const startMin = s24 * 60 + sm;
+  const endMin   = e24 * 60 + em;
+  const totalMin = endMin - startMin;
+
+  if (totalMin <= 0) { alert('おわりの時間は、はじまりより後にしてください'); return; }
+
   closeMamaCard();
   _mamaCardState.usedToday++;
   _mamaCardState.activeCard = _mamaCardState._pendingCard;
-  const end = new Date();
-  end.setMinutes(end.getMinutes() + minutes);
-  _mamaCardState.endTime = end;
-  _mamaCardState.totalMin = minutes;
+
+  const endTime = new Date();
+  endTime.setHours(e24, em, 0, 0);
+  _mamaCardState.endTime  = endTime;
+  _mamaCardState.totalMin = totalMin;
+
   updateMamaCards();
   updateMamaTimer();
   buildTimeline();
