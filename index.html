@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>子どもの日々の記録 v1.3.0</title>
+    <title>子どもの日々の記録 v1.4.0</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Klee+One:wght@400;600&display=swap" rel="stylesheet">
     
     <!-- Firebase SDKs -->
@@ -659,7 +659,7 @@
         <header>
             <h1>📔 子どもの日々の記録</h1>
             <p class="subtitle">朝と夜の様子を記録して、成長をサポート</p>
-            <span class="version-badge" onclick="showTab('version')">v1.3.0</span>
+            <span class="version-badge" onclick="showTab('version')">v1.4.0</span>
             <p class="subtitle" id="userEmail" style="margin-top: 10px; font-weight: 600;"></p>
             <button onclick="handleLogout()" class="logout-btn">ログアウト</button>
         </header>
@@ -667,7 +667,6 @@
         <div class="tab-container">
             <button class="tab active" onclick="showTab('morning')">🌅 朝の記録</button>
             <button class="tab" onclick="showTab('evening')">🌙 夜の記録</button>
-            <button class="tab" onclick="showTab('schedule')">📅 予定</button>
             <button class="tab" onclick="showTab('history')">📖 履歴</button>
             <button class="tab" onclick="showTab('analysis')">📤 データ出力</button>
             <button class="tab" onclick="showTab('settings')">⚙️ 設定</button>
@@ -815,78 +814,6 @@
             <button class="btn evening-theme" onclick="saveEveningEntry()">💾 夜の記録を保存</button>
         </div>
 
-        <!-- 予定管理 -->
-        <div id="scheduleTab" style="display: none;">
-            <div class="card">
-                <h2 class="card-title"><span class="icon">📅</span> 週間予定の登録</h2>
-                
-                <div class="form-group">
-                    <label>対象週</label>
-                    <input type="week" id="scheduleWeek" required onchange="updateDayOptions()">
-                </div>
-
-                <div class="form-group">
-                    <label>曜日</label>
-                    <select id="scheduleDayOfWeek" class="login-input" style="width: 100%;">
-                        <option value="">週を選択してください</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label>予定項目（複数選択可）</label>
-                    <div class="checkbox-list" id="scheduleItemsList">
-                        <div class="checkbox-item" data-item="学校（4時間）" data-load="2">
-                            <div class="checkbox"></div>
-                            <span>学校（4時間）</span>
-                        </div>
-                        <div class="checkbox-item" data-item="学校（5時間）" data-load="3">
-                            <div class="checkbox"></div>
-                            <span>学校（5時間）</span>
-                        </div>
-                        <div class="checkbox-item" data-item="療育" data-load="2">
-                            <div class="checkbox"></div>
-                            <span>療育</span>
-                        </div>
-                        <div class="checkbox-item" data-item="リタリコ" data-load="2">
-                            <div class="checkbox"></div>
-                            <span>リタリコ</span>
-                        </div>
-                        <div class="checkbox-item" data-item="友達と遊ぶ" data-load="1">
-                            <div class="checkbox"></div>
-                            <span>友達と遊ぶ</span>
-                        </div>
-                        <div class="checkbox-item" data-item="宿題" data-load="1">
-                            <div class="checkbox"></div>
-                            <span>宿題</span>
-                        </div>
-                        <div class="checkbox-item" data-item="一人で遊ぶ時間（1時間以上）" data-load="0">
-                            <div class="checkbox"></div>
-                            <span>🎮 一人で遊ぶ時間（1時間以上）</span>
-                        </div>
-                        <div class="checkbox-item" data-item="その他" data-load="0" id="scheduleOtherCheckbox">
-                            <div class="checkbox"></div>
-                            <span>その他</span>
-                        </div>
-                    </div>
-                    <div id="scheduleOtherInput" style="display: none; margin-top: 15px;">
-                        <input type="text" id="scheduleOtherText" placeholder="その他の予定を入力..." style="width: 100%;">
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>メモ（任意）</label>
-                    <textarea id="scheduleMemo" placeholder="時間や詳細を記入...（例：療育 15:00-17:00）"></textarea>
-                </div>
-
-                <button class="btn" onclick="saveSchedule()">💾 予定を保存</button>
-            </div>
-
-            <div class="card">
-                <h2 class="card-title"><span class="icon">📋</span> 週間予定一覧</h2>
-                <div id="scheduleList"></div>
-            </div>
-        </div>
-
         <!-- 履歴 -->
         <div id="historyTab" style="display: none;">
             <div class="card">
@@ -989,16 +916,33 @@
                 </p>
                 
                 <div style="border-left: 4px solid var(--accent); padding-left: 20px; margin-bottom: 30px;">
-                    <h3 style="color: var(--accent); margin-bottom: 10px;">v1.3.0 <span style="font-size: 0.85rem; color: var(--text-light);">- 2025/02/19</span></h3>
+                    <h3 style="color: var(--accent); margin-bottom: 10px;">v1.4.0 <span style="font-size: 0.85rem; color: var(--text-light);">- 2026/03/26</span></h3>
                     <ul style="color: var(--text-dark); line-height: 1.8; margin-left: 20px;">
-                        <li>⚙️ 新しいタブ「設定」を追加</li>
-                        <li>💾 バックアップ機能: 全データをJSONファイルでダウンロード</li>
-                        <li>📥 復元機能: バックアップファイルから全データを復元</li>
+                        <li>❌ 予定管理機能を削除（シンプルに）</li>
+                        <li>🎯 朝・夜の記録とデータ出力に集中</li>
                     </ul>
                 </div>
 
                 <div style="border-left: 4px solid var(--text-light); padding-left: 20px; margin-bottom: 30px;">
-                    <h3 style="color: var(--text-dark); margin-bottom: 10px;">v1.2.0 <span style="font-size: 0.85rem; color: var(--text-light);">- 2025/02/19</span></h3>
+                    <h3 style="color: var(--text-dark); margin-bottom: 10px;">v1.3.1 <span style="font-size: 0.85rem; color: var(--text-light);">- 2026/03/26</span></h3>
+                    <ul style="color: var(--text-dark); line-height: 1.8; margin-left: 20px;">
+                        <li>🐛 復元時のエラー表示を改善（詳細なエラーメッセージを表示）</li>
+                        <li>🐛 古いデータ形式でもエラーが出ないように修正</li>
+                    </ul>
+                </div>
+
+                <div style="border-left: 4px solid var(--text-light); padding-left: 20px; margin-bottom: 30px;">
+                    <h3 style="color: var(--text-dark); margin-bottom: 10px;">v1.3.0 <span style="font-size: 0.85rem; color: var(--text-light);">- 2026/03/26</span></h3>
+                    <ul style="color: var(--text-dark); line-height: 1.8; margin-left: 20px;">
+                        <li>⚙️ 新しいタブ「設定」を追加</li>
+                        <li>💾 バックアップ機能: 全データをJSONファイルでダウンロード</li>
+                        <li>📥 復元機能（差分モード）: 既存データを残して追加復元</li>
+                        <li>📅 最終バックアップ日付の記録・表示</li>
+                    </ul>
+                </div>
+
+                <div style="border-left: 4px solid var(--text-light); padding-left: 20px; margin-bottom: 30px;">
+                    <h3 style="color: var(--text-dark); margin-bottom: 10px;">v1.2.0 <span style="font-size: 0.85rem; color: var(--text-light);">- 2026/02/19</span></h3>
                     <ul style="color: var(--text-dark); line-height: 1.8; margin-left: 20px;">
                         <li>✏️ 履歴画面に「編集」ボタンを追加</li>
                         <li>✏️ 過去の記録を簡単に編集できるように改善</li>
@@ -1006,7 +950,7 @@
                 </div>
 
                 <div style="border-left: 4px solid var(--text-light); padding-left: 20px; margin-bottom: 30px;">
-                    <h3 style="color: var(--text-dark); margin-bottom: 10px;">v1.1.0 <span style="font-size: 0.85rem; color: var(--text-light);">- 2025/02/19</span></h3>
+                    <h3 style="color: var(--text-dark); margin-bottom: 10px;">v1.1.0 <span style="font-size: 0.85rem; color: var(--text-light);">- 2026/02/19</span></h3>
                     <ul style="color: var(--text-dark); line-height: 1.8; margin-left: 20px;">
                         <li>✨ 土日の登校の様子に「おやすみ」選択肢を追加</li>
                         <li>✨ 一時保存機能を追加（全項目入力不要）</li>
@@ -1775,235 +1719,12 @@
             });
         });
 
-        // 週の初期値を設定
-        function initScheduleWeek() {
-            if (!document.getElementById('scheduleWeek').value) {
-                const today = new Date();
-                const year = today.getFullYear();
-                const weekNum = getWeekNumber(today);
-                document.getElementById('scheduleWeek').value = `${year}-W${String(weekNum).padStart(2, '0')}`;
-                updateDayOptions();
-            }
-        }
-
-        // 週が選択されたら曜日の選択肢を更新
-        function updateDayOptions() {
-            const weekInput = document.getElementById('scheduleWeek').value;
-            const daySelect = document.getElementById('scheduleDayOfWeek');
-            
-            if (!weekInput) {
-                daySelect.innerHTML = '<option value="">週を選択してください</option>';
-                return;
-            }
-
-            const startDate = getWeekStartDate(weekInput);
-            const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
-            
-            let options = '';
-            for (let i = 0; i < 7; i++) {
-                const date = new Date(startDate);
-                date.setDate(startDate.getDate() + i);
-                const dayOfWeek = date.getDay();
-                const month = date.getMonth() + 1;
-                const day = date.getDate();
-                
-                options += `<option value="${dayOfWeek}">${dayNames[dayOfWeek]} ${month}/${day}</option>`;
-            }
-            
-            daySelect.innerHTML = options;
-        }
-
-        // 週番号を取得
-        function getWeekNumber(date) {
-            const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-            const dayNum = d.getUTCDay() || 7;
-            d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-            const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
-            return Math.ceil((((d - yearStart) / 86400000) + 1)/7);
-        }
-
-        // 予定を保存
-        function saveSchedule() {
-            const week = document.getElementById('scheduleWeek').value;
-            const dayOfWeek = document.getElementById('scheduleDayOfWeek').value;
-            const memo = document.getElementById('scheduleMemo').value;
-            const otherText = document.getElementById('scheduleOtherText').value;
-
-            if (!week) {
-                alert('対象週を選択してください');
-                return;
-            }
-
-            if (scheduleItems.length === 0) {
-                alert('予定項目を選択してください');
-                return;
-            }
-
-            // その他が選択されている場合、テキストを追加
-            let items = [...scheduleItems];
-            if (items.includes('その他') && otherText) {
-                items = items.filter(i => i !== 'その他');
-                items.push(`その他（${otherText}）`);
-            }
-
-            // 負荷を計算
-            let loadLevel = 0;
-            items.forEach(item => {
-                // 「その他（...）」の場合は「その他」で検索
-                let searchItem = item;
-                if (item.startsWith('その他（')) {
-                    searchItem = 'その他';
-                }
-                
-                const checkbox = document.querySelector(`#scheduleItemsList .checkbox-item[data-item="${searchItem}"]`);
-                if (checkbox) {
-                    loadLevel += parseInt(checkbox.dataset.load || 0);
-                }
-            });
-
-            const schedule = {
-                id: Date.now(),
-                week: week,
-                dayOfWeek: dayOfWeek,
-                items: items,
-                memo: memo,
-                loadLevel: loadLevel
-            };
-
-            // Firebaseに保存
-            let schedules = JSON.parse(localStorage.getItem('weeklySchedules') || '[]');
-            
-            // 同じ週・曜日の予定があれば上書き
-            const existingIndex = schedules.findIndex(s => s.week === week && s.dayOfWeek === dayOfWeek);
-            if (existingIndex >= 0) {
-                schedules[existingIndex] = schedule;
-            } else {
-                schedules.push(schedule);
-            }
-
-            schedules.sort((a, b) => {
-                if (a.week !== b.week) return a.week.localeCompare(b.week);
-                return parseInt(a.dayOfWeek) - parseInt(b.dayOfWeek);
-            });
-
-            localStorage.setItem('weeklySchedules', JSON.stringify(schedules));
-            saveToFirebase('schedules', schedules);
-
-            // リセット
-            scheduleItems = [];
-            document.querySelectorAll('#scheduleItemsList .checkbox-item').forEach(item => item.classList.remove('checked'));
-            document.getElementById('scheduleMemo').value = '';
-            document.getElementById('scheduleOtherText').value = '';
-            document.getElementById('scheduleOtherInput').style.display = 'none';
-
-            alert('✅ 予定を保存しました！');
-            displaySchedules();
-        }
-
-        // 予定一覧を表示
-        function displaySchedules() {
-            const schedules = JSON.parse(localStorage.getItem('weeklySchedules') || '[]');
-            const listElement = document.getElementById('scheduleList');
-
-            if (schedules.length === 0) {
-                listElement.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">📅</div>
-                        <p>まだ予定がありません</p>
-                        <p>週間予定を登録しましょう</p>
-                    </div>
-                `;
-                return;
-            }
-
-            // 週ごとにグループ化
-            const grouped = {};
-            schedules.forEach(schedule => {
-                if (!grouped[schedule.week]) {
-                    grouped[schedule.week] = [];
-                }
-                grouped[schedule.week].push(schedule);
-            });
-
-            const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
-
-            listElement.innerHTML = Object.keys(grouped).sort().reverse().map(week => {
-                const weekSchedules = grouped[week];
-                const weekDate = getWeekStartDate(week);
-                
-                return `
-                    <div style="margin-bottom: 30px;">
-                        <h3 style="color: var(--accent); margin-bottom: 15px;">${formatWeekRange(week)}</h3>
-                        ${weekSchedules.map(schedule => {
-                            const loadColor = schedule.loadLevel >= 5 ? 'var(--alert)' : schedule.loadLevel >= 3 ? 'var(--warning)' : 'var(--success)';
-                            const loadText = schedule.loadLevel >= 5 ? '高' : schedule.loadLevel >= 3 ? '中' : '低';
-                            
-                            return `
-                                <div style="background: var(--bg-card); border-radius: 12px; padding: 15px; margin-bottom: 10px; border-left: 4px solid ${loadColor};">
-                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                                        <div style="font-weight: 600; color: var(--text-dark);">
-                                            ${dayNames[schedule.dayOfWeek]} ${schedule.dayOfWeek !== '0' && schedule.dayOfWeek !== '6' ? '曜日' : ''}
-                                        </div>
-                                        <div style="display: flex; align-items: center; gap: 10px;">
-                                            <span style="background: ${loadColor}; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.85rem;">
-                                                負荷：${loadText}
-                                            </span>
-                                            <button class="delete-btn" onclick="deleteSchedule(${schedule.id})">🗑️</button>
-                                        </div>
-                                    </div>
-                                    <div style="color: var(--text-dark); margin-bottom: 8px;">
-                                        ${schedule.items.map(item => `• ${item}`).join('<br>')}
-                                    </div>
-                                    ${schedule.memo ? `
-                                        <div style="color: var(--text-light); font-size: 0.9rem; padding: 8px; background: var(--bg-main); border-radius: 8px;">
-                                            ${schedule.memo}
-                                        </div>
-                                    ` : ''}
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
-                `;
-            }).join('');
-        }
-
-        // 週の開始日を取得
-        function getWeekStartDate(weekString) {
-            const [year, week] = weekString.split('-W');
-            const date = new Date(year, 0, 1 + (week - 1) * 7);
-            const day = date.getDay();
-            const diff = date.getDate() - day + (day === 0 ? -6 : 1);
-            return new Date(date.setDate(diff));
-        }
-
-        // 週の範囲をフォーマット
-        function formatWeekRange(weekString) {
-            const startDate = getWeekStartDate(weekString);
-            const endDate = new Date(startDate);
-            endDate.setDate(startDate.getDate() + 6);
-            
-            return `${startDate.getMonth() + 1}月${startDate.getDate()}日〜${endDate.getMonth() + 1}月${endDate.getDate()}日の週`;
-        }
-
-        // 予定を削除
-        function deleteSchedule(id) {
-            if (!confirm('この予定を削除してもよろしいですか？')) {
-                return;
-            }
-
-            let schedules = JSON.parse(localStorage.getItem('weeklySchedules') || '[]');
-            schedules = schedules.filter(s => s.id !== id);
-            localStorage.setItem('weeklySchedules', JSON.stringify(schedules));
-            saveToFirebase('schedules', schedules);
-            displaySchedules();
-        }
 
         // タブの切り替え
         function showTab(tab) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.getElementById('morningTab').style.display = 'none';
             document.getElementById('eveningTab').style.display = 'none';
-            document.getElementById('scheduleTab').style.display = 'none';
             document.getElementById('historyTab').style.display = 'none';
             document.getElementById('analysisTab').style.display = 'none';
             document.getElementById('settingsTab').style.display = 'none';
@@ -2025,18 +1746,13 @@
                 if (currentDate) {
                     loadEveningEntry(currentDate);
                 }
-            } else if (tab === 'schedule') {
-                document.getElementById('scheduleTab').style.display = 'block';
-                document.querySelectorAll('.tab')[2].classList.add('active');
-                initScheduleWeek();
-                displaySchedules();
             } else if (tab === 'history') {
                 document.getElementById('historyTab').style.display = 'block';
-                document.querySelectorAll('.tab')[3].classList.add('active');
+                document.querySelectorAll('.tab')[2].classList.add('active');
                 displayHistory();
             } else if (tab === 'analysis') {
                 document.getElementById('analysisTab').style.display = 'block';
-                document.querySelectorAll('.tab')[4].classList.add('active');
+                document.querySelectorAll('.tab')[3].classList.add('active');
                 
                 // デフォルトで過去1週間を設定
                 if (!document.getElementById('analysisStartDate').value) {
@@ -2044,11 +1760,11 @@
                 }
             } else if (tab === 'settings') {
                 document.getElementById('settingsTab').style.display = 'block';
-                document.querySelectorAll('.tab')[5].classList.add('active');
+                document.querySelectorAll('.tab')[4].classList.add('active');
                 displayLastBackupDate();
             } else if (tab === 'version') {
                 document.getElementById('versionTab').style.display = 'block';
-                document.querySelectorAll('.tab')[6].classList.add('active');
+                document.querySelectorAll('.tab')[5].classList.add('active');
             }
         }
 
@@ -2081,7 +1797,6 @@
             }
 
             const entries = JSON.parse(localStorage.getItem('childDailyEntries') || '[]');
-            const schedules = JSON.parse(localStorage.getItem('weeklySchedules') || '[]');
             
             // 指定期間のデータを取得
             const periodData = entries.filter(entry => {
@@ -2089,23 +1804,7 @@
                 return entryDate >= startDate && entryDate <= endDate;
             });
 
-            // 指定期間の予定を取得
-            const periodSchedules = [];
-            schedules.forEach(schedule => {
-                const weekStartDate = getWeekStartDate(schedule.week);
-                for (let i = 0; i < 7; i++) {
-                    const date = new Date(weekStartDate);
-                    date.setDate(weekStartDate.getDate() + i);
-                    if (date.getDay() === parseInt(schedule.dayOfWeek) && date >= startDate && date <= endDate) {
-                        periodSchedules.push({
-                            date: date.toISOString().split('T')[0],
-                            schedule: schedule
-                        });
-                    }
-                }
-            });
-
-            if (periodData.length === 0 && periodSchedules.length === 0) {
+            if (periodData.length === 0) {
                 alert('指定期間にデータがありません。');
                 return;
             }
@@ -2114,38 +1813,15 @@
             let output = `【子どもの記録データ】\n`;
             output += `期間: ${startDateInput} 〜 ${endDateInput}\n`;
             output += `記録日数: ${periodData.length}日分`;
-            if (periodSchedules.length > 0) {
-                output += `、予定: ${periodSchedules.length}日分`;
-            }
             output += `\n\n${'='.repeat(50)}\n\n`;
 
             // 日付ごとにデータを統合
-            const allDates = new Set([
-                ...periodData.map(e => e.date),
-                ...periodSchedules.map(s => s.date)
-            ]);
-
-            const sortedDates = Array.from(allDates).sort();
+            const sortedDates = periodData.map(e => e.date).sort();
 
             sortedDates.forEach(date => {
                 const entry = periodData.find(e => e.date === date);
-                const scheduleData = periodSchedules.find(s => s.date === date);
                 
                 output += `■ ${date}\n\n`;
-                
-                // 予定
-                if (scheduleData) {
-                    const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
-                    const dayOfWeek = dayNames[scheduleData.schedule.dayOfWeek];
-                    const loadText = scheduleData.schedule.loadLevel >= 5 ? '高' : scheduleData.schedule.loadLevel >= 3 ? '中' : '低';
-                    
-                    output += `【予定】(${dayOfWeek}曜日、負荷: ${loadText})\n`;
-                    output += `  ${scheduleData.schedule.items.join(', ')}\n`;
-                    if (scheduleData.schedule.memo) {
-                        output += `  メモ: ${scheduleData.schedule.memo}\n`;
-                    }
-                    output += `\n`;
-                }
                 
                 // 朝の記録
                 if (entry && entry.hasMorning) {
@@ -2161,13 +1837,17 @@
                 // 夜の記録
                 if (entry && entry.hasEvening) {
                     output += `【夜の記録】\n`;
-                    output += `  今日やったこと: ${entry.activities.join(', ')}\n`;
+                    if (entry.activities && entry.activities.length > 0) {
+                        output += `  今日やったこと: ${entry.activities.join(', ')}\n`;
+                    }
                     
                     if (entry.routineIssues && entry.routineIssues.length > 0) {
                         output += `  躓いたシーン: ${entry.routineIssues.join(', ')} (${entry.intensity})\n`;
                     }
                     
-                    output += `  就寝時間: ${entry.bedtime}\n`;
+                    if (entry.bedtime) {
+                        output += `  就寝時間: ${entry.bedtime}\n`;
+                    }
                     
                     if (entry.praisePoints) {
                         output += `  褒めポイント: ${entry.praisePoints}\n`;
@@ -2384,9 +2064,21 @@
                         location.reload();
                     }
                 } catch (error) {
-                    alert('❌ バックアップファイルの読み込みに失敗しました。\n\nファイルが破損している可能性があります。');
                     console.error('Restore error:', error);
+                    let errorMessage = '❌ データの復元中にエラーが発生しました。\n\n';
+                    errorMessage += '【エラー内容】\n';
+                    errorMessage += error.message + '\n\n';
+                    errorMessage += '【対処方法】\n';
+                    errorMessage += '1. バックアップファイルが正しいか確認してください\n';
+                    errorMessage += '2. ブラウザのコンソール(F12)で詳細を確認できます\n';
+                    errorMessage += '3. 問題が解決しない場合は、管理者に相談してください';
+                    alert(errorMessage);
                 }
+                event.target.value = '';
+            };
+            
+            reader.onerror = function() {
+                alert('❌ ファイルの読み込みに失敗しました。\n\nファイルが破損しているか、アクセスできない可能性があります。');
                 event.target.value = '';
             };
             
