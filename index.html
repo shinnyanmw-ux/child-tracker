@@ -1646,7 +1646,7 @@
                             <div class="history-section">
                                 <div class="history-label">今日やったこと</div>
                                 <div class="history-tags">
-                                    ${entry.activities.map(a => `<span class="history-tag">${a}</span>`).join('')}
+                                    ${(entry.activities || []).map(a => `<span class="history-tag">${a}</span>`).join('')}
                                 </div>
                             </div>
                             ${entry.routineIssues && entry.routineIssues.length > 0 ? `
@@ -2362,15 +2362,27 @@
                     localStorage.setItem('weeklySchedules', JSON.stringify(existingSchedules));
                     localStorage.setItem('weeklyAnalyses', JSON.stringify(existingAnalyses));
                     
-                    // Firebaseに保存
+                    // Firebaseに保存（完了を待ってからリロード）
                     if (userDataRef) {
-                        userDataRef.child('entries').set(existingEntries);
-                        userDataRef.child('schedules').set(existingSchedules);
-                        userDataRef.child('analyses').set(existingAnalyses);
+                        Promise.all([
+                            userDataRef.child('entries').set(existingEntries),
+                            userDataRef.child('schedules').set(existingSchedules),
+                            userDataRef.child('analyses').set(existingAnalyses)
+                        ]).then(() => {
+                            alert('✅ データを復元しました！\n\nページを再読み込みします。');
+                            // 少し待ってからリロード（Firebaseの反映を確実にするため）
+                            setTimeout(() => {
+                                location.reload();
+                            }, 500);
+                        }).catch(error => {
+                            console.error('Firebase save error:', error);
+                            alert('✅ LocalStorageには保存されましたが、Firebaseへの保存に失敗しました。\n\nページを再読み込みします。');
+                            location.reload();
+                        });
+                    } else {
+                        alert('✅ データを復元しました！\n\nページを再読み込みします。');
+                        location.reload();
                     }
-                    
-                    alert('✅ データを復元しました！\n\nページを再読み込みします。');
-                    location.reload();
                 } catch (error) {
                     alert('❌ バックアップファイルの読み込みに失敗しました。\n\nファイルが破損している可能性があります。');
                     console.error('Restore error:', error);
