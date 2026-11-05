@@ -14,17 +14,41 @@ const legacy = { id: 1, date: '2026-11-01', hasMorning: true, morningMood: 'す�
  browser = await chromium.launch({executablePath:process.env.CHROMIUM_PATH || '/usr/bin/chromium', headless:true,args:['--no-sandbox']});
  const page = await browser.newPage();
  const errors=[]; page.on('pageerror',e=>errors.push(e.message));
- page.on('dialog',d=>d.accept());
+ const dialogs=[];page.on('dialog',d=>{dialogs.push(d.message());return d.accept();});
  await page.route('**/*',route=>{
   const url=route.request().url();
   if(url.includes('firebase-app-compat.js')) return route.fulfill({contentType:'application/javascript',body:`
    window.testEntries = ${JSON.stringify([legacy])}; window.testFail = false; window.testActivityOptions = null;
    const snap = value => ({val:()=>JSON.parse(JSON.stringify(value))});
-   const ref = {child(name) {return {
+   window.testRootExtras = { profile: { marker: 'preserve' }, schedules: [{week:'2026-11-02',dayOfWeek:1,title:'existing schedule'}], analyses:[{id:'existing',text:'preserve'}] };
+   window.testRootWriteCalls = 0;
+   const ref = {transaction(update) {
+    window.testRootWriteCalls++;
+    const execute = () => {
+     if(window.testFail)return Promise.reject(new Error('offline'));
+     let latest={...window.testRootExtras,entries:window.testEntries,activityOptions:window.testActivityOptions};
+     let value=update(latest);
+     if(window.testRestoreRace){
+      window.testRestoreRace=false;
+      window.testEntries=[...window.testEntries,{id:987,date:'2026-10-29',notes:'concurrent addition',hasEvening:true}];
+      latest={...window.testRootExtras,entries:window.testEntries,activityOptions:window.testActivityOptions};
+      value=update(latest);
+     }
+     if(value===undefined)return Promise.resolve({committed:false});
+     window.testEntries=value.entries;window.testActivityOptions=value.activityOptions;window.testRootExtras=value;
+     return Promise.resolve({committed:true,snapshot:snap(value)});
+    };
+    if(window.testDefer)return new Promise((resolve,reject)=>{window.testRelease=()=>execute().then(resolve,reject);});
+    return execute();
+   },child(name) {return {
     once(type, callback) {const s=snap(name==='entries'?window.testEntries:name==='activityOptions'?window.testActivityOptions:[]);if(callback)callback(s);return Promise.resolve(s);},
     on() {},
     set(data) {if(name==='entries')window.testEntries=data;return Promise.resolve();},
-    transaction(update) {if(window.testFail)return Promise.reject(new Error('offline'));const value=update(name==='entries'?window.testEntries:window.testActivityOptions);if(value===undefined)return Promise.resolve({committed:false});if(name==='entries')window.testEntries=value;else window.testActivityOptions=value;return Promise.resolve({committed:true,snapshot:snap(value)});}
+    transaction(update) {
+     const execute=()=>{if(window.testFail)return Promise.reject(new Error('offline'));const value=update(name==='entries'?window.testEntries:window.testActivityOptions);if(value===undefined)return Promise.resolve({committed:false});if(name==='entries')window.testEntries=value;else window.testActivityOptions=value;return Promise.resolve({committed:true,snapshot:snap(value)});};
+     if(window.testDefer)return new Promise((resolve,reject)=>{window.testRelease=()=>execute().then(resolve,reject);});
+     return execute();
+    }
    };}};
    window.firebase={initializeApp(){},auth:()=>({onAuthStateChanged(cb){setTimeout(()=>cb({uid:'test',email:'test@example.invalid'}),0);}}),database:()=>({ref:()=>ref})};
   `});
@@ -150,14 +174,90 @@ const legacy = { id: 1, date: '2026-11-01', hasMorning: true, morningMood: 'す�
    assert.equal(await page.evaluate(record=>schoolSummary({school:{...record,attendedPeriods:null}}),record),'学校の日／授業への参加なし');
   }
  }
+ // Delete against a stale local list, preserving a newer remote record.
+ await page.evaluate(()=>{
+  localStorage.setItem('childDailyEntries',JSON.stringify(window.testEntries.filter(e=>e.date!=='2026-10-31')));
+  window.testFail=true;
+ });
+ const cacheBeforeDelete=await page.evaluate(()=>localStorage.getItem('childDailyEntries'));
+ await page.evaluate(()=>deleteEntry('2026-11-04'));
+ assert.equal(await page.evaluate(()=>localStorage.getItem('childDailyEntries')),cacheBeforeDelete);
+ assert.equal(await page.evaluate(()=>window.testEntries.some(e=>e.date==='2026-11-04')),true);
+ await page.evaluate(()=>{window.testFail=false;window.testDefer=true;window.testRelease=null;void deleteEntry('2026-11-04');});
+ await page.waitForFunction(()=>typeof window.testRelease==='function');
+ assert.equal(await page.evaluate(()=>localStorage.getItem('childDailyEntries')),cacheBeforeDelete);
+ assert.equal(await page.evaluate(()=>window.testEntries.some(e=>e.date==='2026-11-04')),true);
+ await page.evaluate(()=>{window.testDefer=false;window.testRelease();});
+ await page.waitForFunction(()=>!recordMutationInProgress);
+ assert.equal(await page.evaluate(()=>window.testEntries.some(e=>e.date==='2026-11-04')),false);
+ assert.equal(await page.evaluate(()=>window.testEntries.some(e=>e.date==='2026-10-31')),true);
+ assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('childDailyEntries')).some(e=>e.date==='2026-10-31')),true);
+
+ // Loading guard prevents both delete and restore writes.
+ await page.evaluate(()=>{dailyEntriesReady=false;});
+ const beforeGuard=await page.evaluate(()=>JSON.stringify(window.testEntries));
+ await page.evaluate(()=>deleteEntry('2026-11-01'));
+ assert.equal(await page.evaluate(()=>JSON.stringify(window.testEntries)),beforeGuard);
+ await page.evaluate(()=>{dailyEntriesReady=true;showTab('settings');});
+
+ const restoreFile = data => ({name:'backup.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(data))});
+ // Invalid backup must not alter cloud or local cache.
+ const beforeInvalid=await page.evaluate(()=>({cloud:JSON.stringify(window.testEntries),local:localStorage.getItem('childDailyEntries'),writes:window.testRootWriteCalls}));
+ await page.locator('#restoreFileInput').setInputFiles(restoreFile({data:{entries:[{date:'not-a-date'}]}}));
+ await page.waitForFunction(()=>document.getElementById('restoreStatus').textContent.includes('形式が正しくありません'));
+ assert.deepEqual(await page.evaluate(()=>({cloud:JSON.stringify(window.testEntries),local:localStorage.getItem('childDailyEntries'),writes:window.testRootWriteCalls})),beforeInvalid);
+
+ // Permission/network failure: no success, no local overwrite, no reload.
+ await page.evaluate(()=>window.testFail=true);
+ await page.locator('#restoreFileInput').setInputFiles(restoreFile({data:{entries:[{date:'2026-10-28',notes:'failed restore'}]}}));
+ await page.waitForFunction(()=>document.getElementById('restoreStatus').textContent.includes('完了を確認できません'));
+ assert.equal(await page.evaluate(()=>JSON.stringify(window.testEntries)),beforeInvalid.cloud);
+ assert.equal(await page.evaluate(()=>localStorage.getItem('childDailyEntries')),beforeInvalid.local);
+
+ // Restore retries on a newer root snapshot, preserving all unrelated records and sections.
+ await page.evaluate(()=>{window.testFail=false;window.testDefer=true;window.testRestoreRace=true;window.testRelease=null;});
+ const dialogCount=dialogs.length;
+ await page.locator('#restoreFileInput').setInputFiles(restoreFile({data:{entries:[{date:'2026-11-01',dailyRecord:{concerns:'atomic restore'}}],analyses:[{id:'added',text:'new'}],schedules:[{week:'2026-11-02',dayOfWeek:2,title:'new schedule'}]}}));
+ await page.waitForFunction(()=>typeof window.testRelease==='function');
+ assert.equal(await page.evaluate(()=>localStorage.getItem('childDailyEntries')),beforeInvalid.local);
+ assert.equal(dialogs.slice(dialogCount).some(message=>message==='データを復元しました。'),false);
+ await page.evaluate(()=>{window.testDefer=false;window.testRelease();});
+ await page.waitForFunction(()=>document.getElementById('restoreStatus').textContent.includes('復元が完了'));
+ assert.equal(await page.evaluate(()=>window.testEntries.some(e=>e.date==='2026-10-29')),true);
+ assert.equal(await page.evaluate(()=>window.testEntries.find(e=>e.id===1).dailyRecord.wakeTime),'07:15');
+ assert.equal(await page.evaluate(()=>window.testRootExtras.profile.marker),'preserve');
+ assert.equal(await page.evaluate(()=>window.testRootExtras.analyses.length),2);
+ assert.equal(await page.evaluate(()=>window.testRootExtras.schedules.length),2);
+ assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('weeklyAnalyses')).length),2);
+ assert.equal(dialogs.slice(dialogCount).filter(message=>message==='データを復元しました。').length,1);
  // A legacy backup of the same date must not remove the new fields.
  await page.locator('#restoreFileInput').setInputFiles({name:'legacy-backup.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({data:{entries:[{...legacy,morningMemo:'復元した朝メモ'}]}}))});
  await page.waitForFunction(()=>window.testEntries.find(e=>e.id===1).morningMemo==='復元した朝メモ');
  const restored=await page.evaluate(()=>window.testEntries.find(e=>e.id===1));
  assert.equal(restored.dailyRecord.wakeTime,'07:15');
- assert.equal(restored.dailyRecord.concerns,'追記');
+ assert.equal(restored.dailyRecord.concerns,'atomic restore');
  assert.equal(restored.morningMemo,'復元した朝メモ');
+ // Exact reported date range: every stored date inside both boundaries must be exported.
+ const rangeOutput = await page.evaluate(() => {
+  const previous = localStorage.getItem('childDailyEntries');
+  try {
+   const entries = [];
+   for (let day = new Date('2026-10-21T00:00:00Z'); day <= new Date('2026-11-06T00:00:00Z'); day.setUTCDate(day.getUTCDate() + 1)) {
+    entries.push({ date: day.toISOString().slice(0,10), hasEvening: true, activities: ['学校'], notes: '期間テスト' });
+   }
+   localStorage.setItem('childDailyEntries', JSON.stringify(entries));
+   showTab('analysis');
+   document.getElementById('analysisStartDate').value='2026-10-22';
+   document.getElementById('analysisEndDate').value='2026-11-05';
+   exportDataForAnalysis();
+   return document.getElementById('exportContent').value;
+  } finally { localStorage.setItem('childDailyEntries', previous); }
+ });
+ assert.match(rangeOutput,/記録日数: 15日分/);
+ assert.equal((rangeOutput.match(/^■ /gm)||[]).length,15);
+ assert.match(rangeOutput,/■ 2026-10-22/); assert.match(rangeOutput,/■ 2026-11-05/);
+ assert.doesNotMatch(rangeOutput,/■ 2026-10-21|■ 2026-11-06/);
  assert.deepEqual(errors,[]);
- console.log('PASS: legacy preservation, concurrent record merge, new/edit/partial records, date switching, failed save/retry, safe text rendering, export, full JSON backup, legacy backup restore; no live Firebase writes.');
+ console.log('PASS: legacy preservation, concurrent record merge, new/edit/partial records, date switching, failed save/retry, safe text rendering, export, full JSON backup, legacy backup restore, safe delete/restore with stale data and transaction retries, failure and loading guards; no live Firebase writes.');
  } finally {if(browser)await browser.close();await new Promise(resolve=>server.close(resolve));}
 })().catch(error=>{console.error(error);process.exitCode=1;});

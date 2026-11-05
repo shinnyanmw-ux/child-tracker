@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>子どもの日々の記録 v1.5.0</title>
+    <title>子どもの日々の記録 v1.5.1</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Klee+One:wght@400;600&display=swap" rel="stylesheet">
     
     <!-- Firebase SDKs -->
@@ -684,7 +684,7 @@
         <header>
             <h1>📔 子どもの日々の記録</h1>
             <p class="subtitle">睡眠と学校の様子を、1日ひとつの記録に</p>
-            <span class="version-badge" onclick="showTab('version')">v1.5.0</span>
+            <span class="version-badge" onclick="showTab('version')">v1.5.1</span>
             <p class="subtitle" id="userEmail" style="margin-top: 10px; font-weight: 600;"></p>
             <button onclick="handleLogout()" class="logout-btn">ログアウト</button>
         </header>
@@ -833,8 +833,9 @@
                 <p style="color: var(--text-light); margin-bottom: 20px;">
                     バックアップファイルからデータを復元します。<br>
                     既存のデータは残したまま、バックアップのデータを追加します。<br>
-                    <span style="color: var(--warning); font-weight: 600;">※ 同じ日付のデータがある場合は、バックアップの内容で上書きされます。</span>
+                    <span style="color: var(--warning); font-weight: 600;">※ 同じ日付はバックアップに含まれる項目を上書きし、含まれない項目は残します。</span>
                 </p>
+                <p id="restoreStatus" role="status" aria-live="polite"></p>
                 <input type="file" id="restoreFileInput" accept=".json" style="display: none;" onchange="restoreData(event)">
                 <button class="btn" onclick="document.getElementById('restoreFileInput').click()" style="background: linear-gradient(135deg, var(--success), #66BB6A);">
                     📥 バックアップファイルから復元
@@ -850,6 +851,12 @@
                     アプリの更新履歴です
                 </p>
                 
+                <div class="card">
+                    <h3>v1.5.1 - 2026/11/05</h3>
+                    <p>削除・復元時もクラウドの最新データを確認し、別の端末の記録を保持するよう修正しました。</p>
+                    <p>保存完了を確認してから成功を表示し、通信失敗時の再読み込みを廃止しました。</p>
+                </div>
+
                 <div class="card">
                     <h3>v1.5.0 - 2026/11/05</h3>
                     <p>日々の記録を整理し、授業を1〜6時間目のチェックで記録できるようにしました。</p>
@@ -1180,17 +1187,6 @@
             });
         }
 
-        // Firebaseにデータを保存（既存のlocalStorage保存処理を置き換え）
-        function saveToFirebase(type, data) {
-            if (!userDataRef) return;
-
-            if (type === 'entries') {
-                userDataRef.child('entries').set(data);
-            } else if (type === 'analyses') {
-                userDataRef.child('analyses').set(data);
-            }
-        }
-
         // 日付は端末のタイムゾーンで設定する。
         const now = new Date();
         const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -1264,6 +1260,7 @@
 
         async function saveDailyEntry(event) {
             event.preventDefault();
+            if (recordMutationInProgress) { document.getElementById('dailySaveStatus').textContent = '保存処理が終わるまでお待ちください。'; return; }
             if (!dailyEntriesReady || !userDataRef) {
                 document.getElementById('dailySaveStatus').textContent = '記録の読み込み完了後に保存してください。';
                 return;
@@ -1294,6 +1291,7 @@
             const button = document.getElementById('dailySaveButton');
             const status = document.getElementById('dailySaveStatus');
             button.disabled = true;
+            recordMutationInProgress = true;
             status.textContent = '保存中…';
             const id = Date.now();
             try {
@@ -1312,6 +1310,7 @@
             } catch (error) {
                 status.textContent = '保存できませんでした。入力内容はそのままです。通信を確認して再試行してください。';
             } finally {
+                recordMutationInProgress = false;
                 button.disabled = false;
             }
         }
@@ -1460,20 +1459,39 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // エントリーを削除
-        function deleteEntry(date) {
-            if (!confirm('この記録を削除してもよろしいですか？')) {
-                return;
+        let recordMutationInProgress = false;
+        function canChangeRecords() {
+            if (!userDataRef || !dailyEntriesReady) {
+                alert('記録の読み込み完了後に操作してください。');
+                return false;
             }
+            if (recordMutationInProgress) {
+                alert('保存処理が終わるまでお待ちください。');
+                return false;
+            }
+            return true;
+        }
 
-            let entries = JSON.parse(localStorage.getItem('childDailyEntries') || '[]');
-            entries = entries.filter(entry => entry.date !== date);
-            localStorage.setItem('childDailyEntries', JSON.stringify(entries));
-            
-            // Firebaseに保存
-            saveToFirebase('entries', entries);
-            
-            displayHistory();
+        // 端末の一覧ではなく、クラウドの最新一覧から対象日だけを削除する。
+        async function deleteEntry(date) {
+            if (!canChangeRecords() || !confirm('この記録を削除してもよろしいですか？')) return;
+            const ref = userDataRef;
+            recordMutationInProgress = true;
+            try {
+                const result = await ref.child('entries').transaction(current => {
+                    if (current != null && !Array.isArray(current)) throw new Error('Unexpected entries format');
+                    return (current || []).filter(entry => entry && entry.date !== date);
+                }, undefined, false);
+                if (!result.committed) throw new Error('Delete was not committed');
+                if (userDataRef !== ref) return;
+                localStorage.setItem('childDailyEntries', JSON.stringify(result.snapshot.val() || []));
+                displayHistory();
+                alert('記録を削除しました。');
+            } catch (error) {
+                alert('削除を完了できませんでした。通信を確認して再試行してください。');
+            } finally {
+                recordMutationInProgress = false;
+            }
         }
 
         // 予定管理機能
@@ -1651,7 +1669,7 @@
             const analyses = JSON.parse(localStorage.getItem('weeklyAnalyses') || '[]');
             
             const backupData = {
-                version: '1.5.0',
+                version: '1.5.1',
                 backupDate: new Date().toISOString(),
                 data: {
                     entries: entries,
@@ -1727,124 +1745,88 @@
             dateElement.textContent = dateText;
         }
 
-        // 復元機能（差分モード）
-        function restoreData(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            if (!confirm('バックアップファイルからデータを復元します。\n既存のデータは残したまま、バックアップのデータを追加します。\n（同じ日付はバックアップに含まれる項目を上書きし、含まれない項目は残します）\n\n復元しますか？')) {
-                event.target.value = '';
-                return;
+        // バックアップに含まれないフィールドも保持する。配列は項目値として置き換える。
+        function mergeBackupFields(current, incoming) {
+            if (!incoming || typeof incoming !== 'object' || Array.isArray(incoming)) return incoming;
+            const result = { ...(current && typeof current === 'object' && !Array.isArray(current) ? current : {}) };
+            for (const [key, value] of Object.entries(incoming)) {
+                if (['__proto__', 'constructor', 'prototype'].includes(key)) throw new Error('Invalid field');
+                result[key] = mergeBackupFields(result[key], value);
             }
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const backupData = JSON.parse(e.target.result);
-                    
-                    // データの妥当性チェック
-                    if (!backupData.data || !backupData.data.entries) {
-                        alert('❌ 無効なバックアップファイルです。');
-                        event.target.value = '';
-                        return;
-                    }
-                    
-                    // 既存データを取得
-                    let existingEntries = JSON.parse(localStorage.getItem('childDailyEntries') || '[]');
-                    let existingSchedules = JSON.parse(localStorage.getItem('weeklySchedules') || '[]');
-                    let existingAnalyses = JSON.parse(localStorage.getItem('weeklyAnalyses') || '[]');
-                    
-                    // 差分マージ: 日々の記録
-                    const backupEntries = backupData.data.entries || [];
-                    backupEntries.forEach(backupEntry => {
-                        const existingIndex = existingEntries.findIndex(e => e.date === backupEntry.date);
-                        if (existingIndex >= 0) {
-                            // バックアップにない項目は保持する（旧形式の復元でも新しい記録を消さない）。
-                            existingEntries[existingIndex] = { ...existingEntries[existingIndex], ...backupEntry };
-                        } else {
-                            // なければ追加
-                            existingEntries.push(backupEntry);
-                        }
-                    });
-                    
-                    // 差分マージ: 予定
-                    const backupSchedules = backupData.data.schedules || [];
-                    backupSchedules.forEach(backupSchedule => {
-                        const existingIndex = existingSchedules.findIndex(s => 
-                            s.week === backupSchedule.week && s.dayOfWeek === backupSchedule.dayOfWeek
-                        );
-                        if (existingIndex >= 0) {
-                            existingSchedules[existingIndex] = backupSchedule;
-                        } else {
-                            existingSchedules.push(backupSchedule);
-                        }
-                    });
-                    
-                    // 差分マージ: 分析（IDで判定）
-                    const backupAnalyses = backupData.data.analyses || [];
-                    backupAnalyses.forEach(backupAnalysis => {
-                        const existingIndex = existingAnalyses.findIndex(a => a.id === backupAnalysis.id);
-                        if (existingIndex >= 0) {
-                            existingAnalyses[existingIndex] = backupAnalysis;
-                        } else {
-                            existingAnalyses.push(backupAnalysis);
-                        }
-                    });
-                    
-                    // ソート
-                    existingEntries.sort((a, b) => new Date(b.date) - new Date(a.date));
-                    existingSchedules.sort((a, b) => {
-                        if (a.week !== b.week) return a.week.localeCompare(b.week);
-                        return parseInt(a.dayOfWeek) - parseInt(b.dayOfWeek);
-                    });
-                    
-                    // LocalStorageに保存
-                    localStorage.setItem('childDailyEntries', JSON.stringify(existingEntries));
-                    localStorage.setItem('weeklySchedules', JSON.stringify(existingSchedules));
-                    localStorage.setItem('weeklyAnalyses', JSON.stringify(existingAnalyses));
-                    
-                    // Firebaseに保存（完了を待ってからリロード）
-                    if (userDataRef) {
-                        Promise.all([
-                            userDataRef.child('entries').set(existingEntries),
-                            userDataRef.child('schedules').set(existingSchedules),
-                            userDataRef.child('analyses').set(existingAnalyses),
-                            ...(backupData.data.activityOptions ? [userDataRef.child('activityOptions').transaction(current => ({ ...(current || defaultActivityOptions), ...backupData.data.activityOptions })).then(result => { activityOptions = result.snapshot.val() || {}; })] : [])
-                        ]).then(() => {
-                            alert('✅ データを復元しました！\n\nページを再読み込みします。');
-                            // 少し待ってからリロード（Firebaseの反映を確実にするため）
-                            setTimeout(() => {
-                                location.reload();
-                            }, 500);
-                        }).catch(error => {
-                            console.error('Firebase save error:', error);
-                            alert('✅ LocalStorageには保存されましたが、Firebaseへの保存に失敗しました。\n\nページを再読み込みします。');
-                            location.reload();
-                        });
-                    } else {
-                        alert('✅ データを復元しました！\n\nページを再読み込みします。');
-                        location.reload();
-                    }
-                } catch (error) {
-                    console.error('Restore error:', error);
-                    let errorMessage = '❌ データの復元中にエラーが発生しました。\n\n';
-                    errorMessage += '【エラー内容】\n';
-                    errorMessage += error.message + '\n\n';
-                    errorMessage += '【対処方法】\n';
-                    errorMessage += '1. バックアップファイルが正しいか確認してください\n';
-                    errorMessage += '2. ブラウザのコンソール(F12)で詳細を確認できます\n';
-                    errorMessage += '3. 問題が解決しない場合は、管理者に相談してください';
-                    alert(errorMessage);
-                }
-                event.target.value = '';
-            };
-            
-            reader.onerror = function() {
-                alert('❌ ファイルの読み込みに失敗しました。\n\nファイルが破損しているか、アクセスできない可能性があります。');
-                event.target.value = '';
-            };
-            
-            reader.readAsText(file);
+            return result;
+        }
+        function validateBackup(backup) {
+            const data = backup?.data;
+            if (!data || !Array.isArray(data.entries)) throw new Error('Invalid entries');
+            const isObject = value => value && typeof value === 'object' && !Array.isArray(value);
+            const validDate = value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
+            if (data.entries.some(entry => !isObject(entry) || !validDate(entry.date))) throw new Error('Invalid entry date');
+            for (const key of ['schedules', 'analyses']) {
+                if (data[key] != null && !Array.isArray(data[key])) throw new Error('Invalid list');
+            }
+            if ((data.schedules || []).some(item => !isObject(item) || typeof item.week !== 'string' || ![0,1,2,3,4,5,6].includes(Number(item.dayOfWeek)))) throw new Error('Invalid schedule');
+            if ((data.analyses || []).some(item => !isObject(item) || !['string', 'number'].includes(typeof item.id))) throw new Error('Invalid analysis');
+            if (data.activityOptions != null) {
+                if (!isObject(data.activityOptions) || Object.entries(data.activityOptions).some(([key, item]) => !key || /[.#$\[\]\/]/.test(key) || !isObject(item) || typeof item.name !== 'string' || typeof item.active !== 'boolean')) throw new Error('Invalid activity options');
+            }
+            mergeBackupFields({}, data); // 書き込み開始前に全フィールドを検証する。
+            return data;
+        }
+        function mergeBackupList(current, incoming, keyOf) {
+            if (current != null && !Array.isArray(current)) throw new Error('Unexpected list format');
+            const merged = (current || []).filter(Boolean).map(item => ({ ...item }));
+            for (const item of incoming || []) {
+                const index = merged.findIndex(existing => keyOf(existing) === keyOf(item));
+                if (index >= 0) merged[index] = mergeBackupFields(merged[index], item);
+                else merged.push(mergeBackupFields({}, item));
+            }
+            return merged;
+        }
+
+        async function restoreData(event) {
+            const input = event.target;
+            const file = input.files[0];
+            if (!file) return;
+            if (!canChangeRecords()) { input.value = ''; return; }
+            if (!confirm('バックアップから復元します。クラウドの最新データを残し、同じ日付はバックアップに含まれる項目だけを上書きします。\n復元しますか？')) { input.value = ''; return; }
+            const ref = userDataRef;
+            recordMutationInProgress = true;
+            const status = document.getElementById('restoreStatus');
+            status.textContent = 'バックアップを確認しています…';
+            try {
+                let data;
+                try { data = validateBackup(JSON.parse(await file.text())); }
+                catch (error) { status.textContent = 'バックアップの形式が正しくありません。保存データは変更していません。'; return; }
+                if (userDataRef !== ref || !dailyEntriesReady) throw new Error('Session changed');
+                status.textContent = '復元中…通信が完了するまでお待ちください。';
+                // ユーザー配下を一括で確定する。リトライ時も最新データとマージする。
+                const result = await ref.transaction(current => {
+                    if (current != null && (typeof current !== 'object' || Array.isArray(current))) throw new Error('Unexpected user format');
+                    const latest = current || {};
+                    const merged = { ...latest };
+                    merged.entries = mergeBackupList(latest.entries, data.entries, entry => entry.date).sort((a, b) => b.date.localeCompare(a.date));
+                    if (data.schedules != null) merged.schedules = mergeBackupList(latest.schedules, data.schedules, item => JSON.stringify([item.week, String(item.dayOfWeek)]));
+                    if (data.analyses != null) merged.analyses = mergeBackupList(latest.analyses, data.analyses, item => String(item.id));
+                    if (data.activityOptions != null) merged.activityOptions = mergeBackupFields(latest.activityOptions || defaultActivityOptions, data.activityOptions);
+                    return merged;
+                }, undefined, false);
+                if (!result.committed) throw new Error('Restore was not committed');
+                if (userDataRef !== ref) return;
+                const saved = result.snapshot.val() || {};
+                localStorage.setItem('childDailyEntries', JSON.stringify(saved.entries || []));
+                localStorage.setItem('weeklySchedules', JSON.stringify(saved.schedules || []));
+                localStorage.setItem('weeklyAnalyses', JSON.stringify(saved.analyses || []));
+                activityOptions = saved.activityOptions || structuredClone(defaultActivityOptions);
+                renderActivityChoices(); renderActivitySettings(); displayHistory();
+                loadDailyEntry(document.getElementById('dailyDate').value);
+                status.textContent = '復元が完了し、クラウドへの保存を確認しました。';
+                alert('データを復元しました。');
+            } catch (error) {
+                status.textContent = '復元の完了を確認できませんでした。通信・アクセス権を確認して再試行してください。';
+            } finally {
+                recordMutationInProgress = false;
+                input.value = '';
+            }
         }
 
     </script>
