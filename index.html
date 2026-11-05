@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>子どもの日々の記録 v1.4.0</title>
+    <title>子どもの日々の記録 v1.5.0</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Klee+One:wght@400;600&display=swap" rel="stylesheet">
     
     <!-- Firebase SDKs -->
@@ -617,6 +617,31 @@
             transform: scale(1.05);
             box-shadow: 0 4px 10px rgba(255, 107, 157, 0.3);
         }
+        .school-fields { border: 2px solid var(--border); border-radius: 16px; padding: 18px; margin: 24px 0; min-width: 0; }
+        .school-fields legend { font-weight: 700; padding: 0 6px; }
+        select { width: 100%; min-height: 46px; font: inherit; color: var(--text-dark); background: white; border: 2px solid var(--border); border-radius: 10px; padding: 10px; margin: 6px 0 14px; }
+        .period-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 0; }
+        .period-choice { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 48px; border: 2px solid var(--border); border-radius: 10px; cursor: pointer; font-size: 14px; }
+        .period-choice:has(input:checked) { background: #fff0dc; border-color: var(--morning); }
+        .period-choice:has(input:disabled) { opacity: .4; }
+        .period-choice input { width: 18px; height: 18px; accent-color: #c67a13; }
+        .period-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+        .period-actions button { background: white; color: var(--text-dark); border: 1px solid var(--border); padding: 10px; border-radius: 8px; font: inherit; font-size: 13px; cursor: pointer; }
+        .field-hint { font-size: 13px; color: #666; line-height: 1.6; margin: 8px 0; }
+        #dailyForm > .card > p { font-size: 13px; line-height: 1.7; color: #666; margin-bottom: 12px; }
+        .tab-container { overflow-x: auto; }
+        .tab-container .tab { white-space: nowrap; flex: 0 0 auto; }
+        @media (max-width: 500px) {
+            #dailyForm .card { padding: 20px; }
+            #dailyForm .school-fields { padding: 12px; }
+            .tab-container .tab { font-size: 12px; padding: 12px 10px; }
+        }
+        .activity-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 12px 0; }
+        .activity-choice { display: flex; align-items: center; gap: 8px; border: 2px solid var(--border); padding: 12px; border-radius: 10px; cursor: pointer; overflow-wrap: anywhere; font-size: 14px; }
+        .activity-choice:has(input:checked) { background: #edf7ee; border-color: #7caa80; }
+        .activity-choice input { flex: 0 0 auto; width: 18px; height: 18px; accent-color: #477f4d; }
+        .activity-small-button { padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: white; color: var(--text-dark); font: inherit; font-size: 14px; cursor: pointer; margin: 6px 0; }
+        .activity-setting-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; border-bottom: 1px solid var(--border); padding: 6px 0; overflow-wrap: anywhere; }
     </style>
 </head>
 <body>
@@ -658,160 +683,59 @@
     <div class="container" id="mainApp" style="display: none;">
         <header>
             <h1>📔 子どもの日々の記録</h1>
-            <p class="subtitle">朝と夜の様子を記録して、成長をサポート</p>
-            <span class="version-badge" onclick="showTab('version')">v1.4.0</span>
+            <p class="subtitle">睡眠と学校の様子を、1日ひとつの記録に</p>
+            <span class="version-badge" onclick="showTab('version')">v1.5.0</span>
             <p class="subtitle" id="userEmail" style="margin-top: 10px; font-weight: 600;"></p>
             <button onclick="handleLogout()" class="logout-btn">ログアウト</button>
         </header>
 
         <div class="tab-container">
-            <button class="tab active" onclick="showTab('morning')">🌅 朝の記録</button>
-            <button class="tab" onclick="showTab('evening')">🌙 夜の記録</button>
+            <button class="tab active" onclick="showTab('daily')">📝 日々の記録</button>
             <button class="tab" onclick="showTab('history')">📖 履歴</button>
             <button class="tab" onclick="showTab('analysis')">📤 データ出力</button>
             <button class="tab" onclick="showTab('settings')">⚙️ 設定</button>
             <button class="tab" onclick="showTab('version')">ℹ️ バージョン</button>
         </div>
 
-        <!-- 朝の記録 -->
-        <div id="morningTab">
-            <div class="card">
-                <h2 class="card-title morning"><span class="icon">📅</span> 日付</h2>
-                <div class="form-group">
-                    <input type="date" id="morningDate" required>
-                </div>
-            </div>
-
-            <div class="card">
-                <h2 class="card-title morning"><span class="icon">😊</span> 朝の様子</h2>
-                <div class="option-grid">
-                    <div class="option-btn morning-theme" data-field="morningMood" data-value="すっきり">すっきり</div>
-                    <div class="option-btn morning-theme" data-field="morningMood" data-value="ぐずぐず">ぐずぐず</div>
-                    <div class="option-btn morning-theme" data-field="morningMood" data-value="眠そう">眠そう</div>
-                    <div class="option-btn morning-theme" data-field="morningMood" data-value="その他">その他</div>
-                </div>
-            </div>
-
-            <div class="card">
-                <h2 class="card-title morning"><span class="icon">🏫</span> 登校の様子</h2>
-                <div class="option-grid" id="schoolAttendanceGrid">
-                    <div class="option-btn morning-theme" data-field="schoolAttendance" data-value="すんなり">すんなり</div>
-                    <div class="option-btn morning-theme" data-field="schoolAttendance" data-value="グズグズしつつ行った">グズグズしつつ行った</div>
-                    <div class="option-btn morning-theme" data-field="schoolAttendance" data-value="早退or遅刻して行った">早退or遅刻して行った</div>
-                    <div class="option-btn morning-theme" data-field="schoolAttendance" data-value="休んだ">休んだ</div>
-                    <div class="option-btn morning-theme" data-field="schoolAttendance" data-value="おやすみ" id="weekendOption" style="display: none;">おやすみ</div>
-                </div>
-            </div>
-
-            <div class="card">
-                <h2 class="card-title morning"><span class="icon">📝</span> メモ</h2>
-                <div class="form-group">
-                    <textarea id="morningMemo" placeholder="朝の様子で気になったことを記録..."></textarea>
-                </div>
-            </div>
-
-            <button class="btn morning-theme" onclick="saveMorningEntry()">💾 朝の記録を保存</button>
-        </div>
-
-        <!-- 夜の記録 -->
-        <div id="eveningTab" style="display: none;">
-            <div class="card">
-                <h2 class="card-title evening"><span class="icon">📅</span> 日付</h2>
-                <div class="form-group">
-                    <input type="date" id="eveningDate" required>
-                </div>
-            </div>
-
-            <div class="card">
-                <h2 class="card-title evening"><span class="icon">✏️</span> 今日やったこと</h2>
-                <div class="checkbox-list" id="activitiesList">
-                    <div class="checkbox-item" data-activity="学校（4時間）">
-                        <div class="checkbox"></div>
-                        <span>学校（4時間）</span>
+        <div id="dailyTab">
+            <form id="dailyForm" onsubmit="saveDailyEntry(event)">
+                <div class="card">
+                    <h2 class="card-title">📝 日々の記録</h2>
+                    <p>3分で、今日の様子を少しだけ。分かるところだけで大丈夫です。</p>
+                    <p>これまでの朝・夜の記録は履歴に残ります。設定からバックアップもできます。</p>
+                    <div class="form-group"><label for="dailyDate">日付</label><input type="date" id="dailyDate" required></div>
+                    <div class="form-group"><label for="dailySchoolStatus">今日はどんな日？</label>
+                        <select id="dailySchoolStatus" onchange="updateSchoolFields()"><option value="school_day">学校</option><option value="holiday">休日</option></select>
                     </div>
-                    <div class="checkbox-item" data-activity="学校（5時間）">
-                        <div class="checkbox"></div>
-                        <span>学校（5時間）</span>
-                    </div>
-                    <div class="checkbox-item" data-activity="療育">
-                        <div class="checkbox"></div>
-                        <span>療育</span>
-                    </div>
-                    <div class="checkbox-item" data-activity="リタリコ">
-                        <div class="checkbox"></div>
-                        <span>リタリコ</span>
-                    </div>
-                    <div class="checkbox-item" data-activity="友達と遊んだ">
-                        <div class="checkbox"></div>
-                        <span>友達と遊んだ</span>
-                    </div>
-                    <div class="checkbox-item" data-activity="一人で遊ぶ時間（1時間以上）">
-                        <div class="checkbox"></div>
-                        <span>🎮 一人で遊ぶ時間（1時間以上）</span>
-                    </div>
-                    <div class="checkbox-item" data-activity="その他" id="otherActivityCheckbox">
-                        <div class="checkbox"></div>
-                        <span>その他</span>
-                    </div>
+                    <div class="form-group" data-school-only><label for="dailyWakeTime">起床時間</label><input type="time" id="dailyWakeTime"></div>
+                    <div class="form-group" data-school-only><label for="dailyBedtime">就寝時間（記録日の夜）</label><input type="time" id="dailyBedtime"></div>
+                    <fieldset class="school-fields" data-school-only>
+                        <legend>🏫 学校・授業への参加</legend>
+                        <div id="schoolDetails" hidden>
+                            <label for="dailyPeriodCount">今日、予定されていた授業</label>
+                            <select id="dailyPeriodCount" onchange="resetPeriods()"><option value="">選んでください</option><option value="1">1時間</option><option value="2">2時間</option><option value="3">3時間</option><option value="4">4時間</option><option value="5">5時間</option><option value="6">6時間</option></select>
+                            <p class="field-hint">参加した時間にチェックしてください。別室などで授業に参加した場合も含めて記録できます。</p>
+                            <div class="period-grid"><label class="period-choice"><input type="checkbox" id="period1" onchange="periodsRecorded = true; updateSchoolFields()">1時間目</label><label class="period-choice"><input type="checkbox" id="period2" onchange="periodsRecorded = true; updateSchoolFields()">2時間目</label><label class="period-choice"><input type="checkbox" id="period3" onchange="periodsRecorded = true; updateSchoolFields()">3時間目</label><label class="period-choice"><input type="checkbox" id="period4" onchange="periodsRecorded = true; updateSchoolFields()">4時間目</label><label class="period-choice"><input type="checkbox" id="period5" onchange="periodsRecorded = true; updateSchoolFields()">5時間目</label><label class="period-choice"><input type="checkbox" id="period6" onchange="periodsRecorded = true; updateSchoolFields()">6時間目</label></div>
+                            <div class="period-actions"><button type="button" onclick="selectPeriods(true)">全部に参加</button><button type="button" onclick="selectPeriods(false)">授業への参加なし</button></div>
+                            <p id="periodSummary" class="field-hint" aria-live="polite"></p>
+                            <label for="dailyOtherSpace">授業以外の時間・別室などで過ごした</label>
+                            <select id="dailyOtherSpace"><option value="">未入力</option><option value="yes">あり</option><option value="no">なし</option></select>
+                        </div>
+                    </fieldset>
+                    <fieldset class="school-fields">
+                        <legend>🌱 課外活動</legend>
+                        <p class="field-hint">参加したものをチェックしてください。項目は設定から変更できます。</p>
+                        <div id="dailyActivities" class="activity-grid"></div>
+                        <button type="button" class="activity-small-button" onclick="selectedActivities.clear(); activitiesRecorded = true; renderActivityChoices();">今日はなし</button>
+                        <p id="activitySummary" class="field-hint" aria-live="polite"></p>
+                    </fieldset>
+                    <div class="form-group" data-school-only><label for="dailyMorning">登校前の様子</label><select id="dailyMorning"><option value="">未入力・分からない</option><option value="calm">落ち着いている</option><option value="reluctant">気が重そう</option><option value="distressed">つらそう</option></select></div>
+                    <div class="form-group" data-school-only><label for="dailyFatigue">帰宅後・夕方の様子</label><select id="dailyFatigue"><option value="">未入力・分からない</option><option value="comfortable">余裕がある</option><option value="tired">少し疲れている</option><option value="exhausted">かなり疲れている</option></select></div>
+                    <div class="form-group"><label for="dailyConcerns">気になること</label><textarea id="dailyConcerns" placeholder="気になったことを自由に記入してください"></textarea></div>
+                    <p id="dailySaveStatus" role="status" aria-live="polite"></p>
                 </div>
-                <div id="otherActivityInput" style="display: none; margin-top: 15px;">
-                    <input type="text" id="otherActivityText" placeholder="その他の活動を入力してください..." style="width: 100%;">
-                </div>
-            </div>
-
-            <div class="card">
-                <h2 class="card-title evening"><span class="icon">⚠️</span> 夜のルーチンで躓いたシーン</h2>
-                <div class="checkbox-list" id="routineIssuesList">
-                    <div class="checkbox-item" data-issue="夜ごはん">
-                        <div class="checkbox"></div>
-                        <span>夜ごはん</span>
-                    </div>
-                    <div class="checkbox-item" data-issue="お風呂">
-                        <div class="checkbox"></div>
-                        <span>お風呂</span>
-                    </div>
-                    <div class="checkbox-item" data-issue="宿題">
-                        <div class="checkbox"></div>
-                        <span>宿題</span>
-                    </div>
-                    <div class="checkbox-item" data-issue="寝る">
-                        <div class="checkbox"></div>
-                        <span>寝る</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card" id="intensityCard" style="display: none;">
-                <h2 class="card-title evening"><span class="icon">📊</span> 躓き度合</h2>
-                <div class="option-grid">
-                    <div class="option-btn evening-theme" data-field="intensity" data-value="軽く">軽く</div>
-                    <div class="option-btn evening-theme" data-field="intensity" data-value="時間かかった">時間かかった</div>
-                    <div class="option-btn evening-theme" data-field="intensity" data-value="ギャン泣き">ギャン泣き</div>
-                </div>
-            </div>
-
-            <div class="card">
-                <h2 class="card-title evening"><span class="icon">🛌</span> 就寝時間</h2>
-                <div class="form-group">
-                    <input type="time" id="bedtime" required>
-                </div>
-            </div>
-
-            <div class="card">
-                <h2 class="card-title evening"><span class="icon">✨</span> 褒めポイント</h2>
-                <div class="form-group">
-                    <textarea id="praisePoints" placeholder="今日できたこと、頑張ったこと、良かったことを記録しましょう..."></textarea>
-                </div>
-            </div>
-
-            <div class="card">
-                <h2 class="card-title evening"><span class="icon">📝</span> 気になったこと</h2>
-                <div class="form-group">
-                    <textarea id="eveningNotes" placeholder="今日気になったことや特記事項を記録しましょう..."></textarea>
-                </div>
-            </div>
-
-            <button class="btn evening-theme" onclick="saveEveningEntry()">💾 夜の記録を保存</button>
+                <button type="submit" id="dailySaveButton" class="btn morning-theme" disabled>💾 記録を保存</button>
+            </form>
         </div>
 
         <!-- 履歴 -->
@@ -880,6 +804,17 @@
         <!-- 設定 -->
         <div id="settingsTab" style="display: none;">
             <div class="card">
+                <h2 class="card-title">🌱 課外活動の項目</h2>
+                <p class="field-hint">日々の記録に表示する項目を追加・削除できます。削除しても、過去の記録は残ります。</p>
+                <div id="activitySettingsList"></div>
+                <form id="activitySettingsForm" onsubmit="addActivityOption(event)">
+                    <label for="newActivityName">追加する活動名</label>
+                    <input id="newActivityName" type="text" maxlength="40" required placeholder="例：スイミング" style="width:100%;">
+                    <button type="submit" class="activity-small-button">＋ 項目を追加</button>
+                </form>
+                <p id="activitySettingsStatus" role="status" aria-live="polite"></p>
+            </div>
+            <div class="card">
                 <h2 class="card-title"><span class="icon">💾</span> データのバックアップ</h2>
                 <p style="color: var(--text-light); margin-bottom: 15px;">
                     すべてのデータをファイルに保存します。<br>
@@ -915,6 +850,12 @@
                     アプリの更新履歴です
                 </p>
                 
+                <div class="card">
+                    <h3>v1.5.0 - 2026/11/05</h3>
+                    <p>日々の記録を整理し、授業を1〜6時間目のチェックで記録できるようにしました。</p>
+                    <p>これまでの朝・夜の記録は履歴とバックアップに残ります。</p>
+                </div>
+
                 <div style="border-left: 4px solid var(--accent); padding-left: 20px; margin-bottom: 30px;">
                     <h3 style="color: var(--accent); margin-bottom: 10px;">v1.4.0 <span style="font-size: 0.85rem; color: var(--text-light);">- 2026/03/26</span></h3>
                     <ul style="color: var(--text-dark); line-height: 1.8; margin-left: 20px;">
@@ -994,6 +935,92 @@
         let currentUser = null;
         let userDataRef = null;
 
+        let dailyEntriesReady = false;
+
+        const defaultActivityOptions = {
+            afterSchoolDay: { name: '放課後デイ', active: true },
+            minecraft: { name: 'マイクラ教室', active: true },
+            gym: { name: 'ジム', active: true },
+            hospital: { name: '病院', active: true }
+        };
+        let activityOptions = structuredClone(defaultActivityOptions);
+        let selectedActivities = new Map();
+        let activitiesRecorded = false;
+        let activityOptionsReady = false;
+
+        function renderActivityChoices() {
+            const choices = new Map(Object.entries(activityOptions).filter(([, item]) => item.active).map(([id, item]) => [id, item.name]));
+            selectedActivities.forEach((name, id) => { if (!choices.has(id)) choices.set(id, name); });
+            const list = document.getElementById('dailyActivities');
+            list.replaceChildren();
+            choices.forEach((name, id) => {
+                const label = document.createElement('label');
+                label.className = 'activity-choice';
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = selectedActivities.has(id);
+                checkbox.addEventListener('change', () => {
+                    if (checkbox.checked) selectedActivities.set(id, name);
+                    else selectedActivities.delete(id);
+                    activitiesRecorded = true;
+                    renderActivityChoices();
+                });
+                label.append(checkbox, document.createTextNode(name + (activityOptions[id]?.active ? '' : '（削除済み）')));
+                list.append(label);
+            });
+            document.getElementById('activitySummary').textContent = !activitiesRecorded ? '課外活動はまだ未入力です。' : selectedActivities.size ? `参加：${[...selectedActivities.values()].join('、')}` : '今日は課外活動なし';
+        }
+        function renderActivitySettings() {
+            const list = document.getElementById('activitySettingsList');
+            list.replaceChildren();
+            Object.entries(activityOptions).filter(([, item]) => item.active).forEach(([id, item]) => {
+                const row = document.createElement('div');
+                row.className = 'activity-setting-row';
+                const name = document.createElement('span'); name.textContent = item.name;
+                const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = '削除';
+                remove.className = 'activity-small-button'; remove.setAttribute('aria-label', item.name + 'を削除');
+                remove.onclick = () => removeActivityOption(id);
+                row.append(name, remove); list.append(row);
+            });
+        }
+        async function changeActivityOptions(update) {
+            const status = document.getElementById('activitySettingsStatus');
+            if (!activityOptionsReady || !userDataRef) {
+                status.textContent = '設定の読み込み完了後に操作してください。'; return false;
+            }
+            const buttons = document.querySelectorAll('#activitySettingsList button, #activitySettingsForm button');
+            buttons.forEach(button => button.disabled = true);
+            status.textContent = '保存中…';
+            try {
+                const result = await userDataRef.child('activityOptions').transaction(current => update(current || structuredClone(defaultActivityOptions)), undefined, false);
+                if (!result.committed) { status.textContent = '同じ名前の項目がすでにあります。'; return false; }
+                activityOptions = result.snapshot.val() || {};
+                renderActivityChoices(); renderActivitySettings();
+                status.textContent = '課外活動の設定を保存しました。'; return true;
+            } catch (error) {
+                status.textContent = '保存できませんでした。通信を確認して再試行してください。'; return false;
+            } finally { buttons.forEach(button => button.disabled = false); }
+        }
+        async function addActivityOption(event) {
+            event.preventDefault();
+            const input = document.getElementById('newActivityName');
+            const name = input.value.trim();
+            if (!name) { input.setCustomValidity('活動名を入力してください。'); input.reportValidity(); input.setCustomValidity(''); return; }
+            const id = crypto.randomUUID();
+            if (await changeActivityOptions(current => {
+                if (Object.values(current).some(item => item.active && item.name.normalize('NFKC').toLocaleLowerCase() === name.normalize('NFKC').toLocaleLowerCase())) return;
+                return { ...current, [id]: { name, active: true } };
+            })) input.value = '';
+        }
+        async function removeActivityOption(id) {
+            if (!confirm(`「${activityOptions[id].name}」を選択肢から削除しますか？ 過去の記録は残ります。`)) return;
+            await changeActivityOptions(current => ({ ...current, [id]: { ...current[id], active: false } }));
+        }
+        function activitySummary(daily) {
+            if (!daily.extracurricularRecorded) return '未入力';
+            return (daily.extracurricular || []).map(item => item.name).join('、') || 'なし';
+        }
+
         // 認証状態の監視
         auth.onAuthStateChanged(user => {
             if (user) {
@@ -1007,6 +1034,10 @@
                 loadDataFromFirebase();
             } else {
                 currentUser = null;
+                userDataRef = null;
+                dailyEntriesReady = false;
+                activityOptionsReady = false;
+                document.getElementById('dailySaveButton').disabled = true;
                 document.getElementById('loginScreen').style.display = 'flex';
                 document.getElementById('mainApp').style.display = 'none';
             }
@@ -1101,12 +1132,27 @@
         function loadDataFromFirebase() {
             if (!userDataRef) return;
 
-            // 日々の記録を読み込み
-            userDataRef.child('entries').once('value', snapshot => {
-                const data = snapshot.val();
-                if (data) {
-                    localStorage.setItem('childDailyEntries', JSON.stringify(data));
-                }
+            activityOptionsReady = false;
+            document.getElementById('activitySettingsStatus').textContent = '課外活動の設定を読み込んでいます…';
+            userDataRef.child('activityOptions').once('value').then(snapshot => {
+                activityOptions = snapshot.val() || structuredClone(defaultActivityOptions);
+                activityOptionsReady = true;
+                renderActivityChoices(); renderActivitySettings();
+                document.getElementById('activitySettingsStatus').textContent = '';
+            }).catch(() => {
+                document.getElementById('activitySettingsStatus').textContent = '設定を読み込めませんでした。通信を確認して再ログインしてください。';
+            });
+            dailyEntriesReady = false;
+            document.getElementById('dailySaveButton').disabled = true;
+            document.getElementById('dailySaveStatus').textContent = '記録を読み込んでいます…';
+            userDataRef.child('entries').once('value').then(snapshot => {
+                localStorage.setItem('childDailyEntries', JSON.stringify(snapshot.val() || []));
+                dailyEntriesReady = true;
+                loadDailyEntry(document.getElementById('dailyDate').value);
+                document.getElementById('dailySaveButton').disabled = false;
+                document.getElementById('dailySaveStatus').textContent = '';
+            }).catch(() => {
+                document.getElementById('dailySaveStatus').textContent = '記録を読み込めませんでした。通信を確認して再ログインしてください。';
             });
 
             // 分析結果を読み込み
@@ -1120,12 +1166,9 @@
             // リアルタイム同期
             userDataRef.child('entries').on('value', snapshot => {
                 const data = snapshot.val();
-                if (data) {
-                    localStorage.setItem('childDailyEntries', JSON.stringify(data));
-                    // 履歴タブが表示されている場合は更新
-                    if (document.getElementById('historyTab').style.display !== 'none') {
-                        displayHistory();
-                    }
+                localStorage.setItem('childDailyEntries', JSON.stringify(data || []));
+                if (document.getElementById('historyTab').style.display !== 'none') {
+                    displayHistory();
                 }
             });
 
@@ -1133,10 +1176,6 @@
                 const data = snapshot.val();
                 if (data) {
                     localStorage.setItem('weeklyAnalyses', JSON.stringify(data));
-                    // 分析タブが表示されている場合は更新
-                    if (document.getElementById('analysisTab').style.display !== 'none') {
-                        displayPastAnalyses();
-                    }
                 }
             });
         }
@@ -1152,381 +1191,133 @@
             }
         }
 
-        // 今日の日付を設定 + 土日判定
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('morningDate').value = today;
-        document.getElementById('eveningDate').value = today;
-        
-        // ページ読み込み時に土日判定を実行（認証後にも実行）
-        setTimeout(() => {
-            checkWeekend(today);
-        }, 100);
+        // 日付は端末のタイムゾーンで設定する。
+        const now = new Date();
+        const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        document.getElementById('dailyDate').value = today;
+        document.getElementById('dailyDate').addEventListener('change', event => loadDailyEntry(event.target.value));
 
-        // 選択データ
-        let morningData = {
-            morningMood: '',
-            schoolAttendance: ''
-        };
+        let periodsRecorded = false;
+        const morningLabels = { calm: '落ち着いている', reluctant: '気が重そう', distressed: 'つらそう' };
+        const fatigueLabels = { comfortable: '余裕がある', tired: '少し疲れている', exhausted: 'かなり疲れている' };
 
-        let eveningData = {
-            activities: [],
-            routineIssues: [],
-            intensity: ''
-        };
-
-        // オプションボタンの選択（単一選択）
-        document.querySelectorAll('.option-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const field = this.dataset.field;
-                const value = this.dataset.value;
-                
-                // 同じフィールドの他のボタンの選択を解除
-                document.querySelectorAll(`.option-btn[data-field="${field}"]`).forEach(b => {
-                    b.classList.remove('selected');
-                });
-                
-                this.classList.add('selected');
-                
-                // データに保存
-                if (field === 'morningMood' || field === 'schoolAttendance') {
-                    morningData[field] = value;
-                } else if (field === 'intensity') {
-                    eveningData[field] = value;
-                }
-            });
-        });
-
-        // チェックボックスアイテムの選択（複数選択）
-        document.querySelectorAll('#activitiesList .checkbox-item').forEach(item => {
-            item.addEventListener('click', function() {
-                this.classList.toggle('checked');
-                const activity = this.dataset.activity;
-                
-                if (this.classList.contains('checked')) {
-                    if (!eveningData.activities.includes(activity)) {
-                        eveningData.activities.push(activity);
-                    }
-                } else {
-                    eveningData.activities = eveningData.activities.filter(a => a !== activity);
-                }
-
-                // 「その他」が選択された場合、入力欄を表示
-                if (activity === 'その他') {
-                    const otherInput = document.getElementById('otherActivityInput');
-                    if (this.classList.contains('checked')) {
-                        otherInput.style.display = 'block';
-                    } else {
-                        otherInput.style.display = 'none';
-                        document.getElementById('otherActivityText').value = '';
-                    }
-                }
-            });
-        });
-
-        document.querySelectorAll('#routineIssuesList .checkbox-item').forEach(item => {
-            item.addEventListener('click', function() {
-                this.classList.toggle('checked');
-                const issue = this.dataset.issue;
-                
-                if (this.classList.contains('checked')) {
-                    if (!eveningData.routineIssues.includes(issue)) {
-                        eveningData.routineIssues.push(issue);
-                    }
-                } else {
-                    eveningData.routineIssues = eveningData.routineIssues.filter(i => i !== issue);
-                }
-
-                // 躓きがある場合は度合を表示
-                const intensityCard = document.getElementById('intensityCard');
-                if (eveningData.routineIssues.length > 0) {
-                    intensityCard.style.display = 'block';
-                } else {
-                    intensityCard.style.display = 'none';
-                    eveningData.intensity = '';
-                    document.querySelectorAll('.option-btn[data-field="intensity"]').forEach(b => {
-                        b.classList.remove('selected');
-                    });
-                }
-            });
-        });
-
-        // 朝の記録：日付変更時に既存データを読み込む + 土日判定
-        document.getElementById('morningDate').addEventListener('change', function() {
-            checkWeekend(this.value);
-            loadMorningEntry(this.value);
-        });
-
-        // 土日判定して「おやすみ」オプションを表示/非表示
-        function checkWeekend(dateString) {
-            const date = new Date(dateString);
-            const dayOfWeek = date.getDay(); // 0=日曜, 6=土曜
-            const weekendOption = document.getElementById('weekendOption');
-            const schoolOptions = document.querySelectorAll('#schoolAttendanceGrid .option-btn:not(#weekendOption)');
-            
-            if (dayOfWeek === 0 || dayOfWeek === 6) {
-                // 土日の場合
-                weekendOption.style.display = 'block';
-                schoolOptions.forEach(opt => opt.style.display = 'none');
-            } else {
-                // 平日の場合
-                weekendOption.style.display = 'none';
-                schoolOptions.forEach(opt => opt.style.display = 'block');
+        function updateSchoolFields() {
+            const attended = document.getElementById('dailySchoolStatus').value === 'school_day';
+            document.querySelectorAll('[data-school-only]').forEach(element => element.hidden = !attended);
+            document.getElementById('schoolDetails').hidden = !attended;
+            const count = Number(document.getElementById('dailyPeriodCount').value);
+            for (let n = 1; n <= 6; n++) {
+                const box = document.getElementById('period' + n);
+                box.disabled = !attended || n > count;
+                if (n > count) box.checked = false;
             }
+            document.querySelectorAll('.period-actions button').forEach(button => button.disabled = !count);
+            const selected = Array.from({ length: 6 }, (_, i) => i + 1).filter(n => document.getElementById('period' + n).checked);
+            document.getElementById('periodSummary').textContent = !count ? '予定されていた授業数を選ぶとチェックできます。' : !periodsRecorded ? '参加した時間はまだ未入力です。' : `参加：${selected.length} / ${count}時間（${selected.length ? selected.join('・') + '時間目' : '授業への参加なし'}）`;
+        }
+        function resetPeriods() {
+            periodsRecorded = false;
+            for (let n = 1; n <= 6; n++) document.getElementById('period' + n).checked = false;
+            updateSchoolFields();
+        }
+        function selectPeriods(all) {
+            const count = Number(document.getElementById('dailyPeriodCount').value);
+            if (!count) return;
+            for (let n = 1; n <= 6; n++) document.getElementById('period' + n).checked = all && n <= count;
+            periodsRecorded = true;
+            updateSchoolFields();
+        }
+        function schoolSummary(daily) {
+            const school = daily.school;
+            if (!school) return daily.attendance || '未入力';
+            if (school.status === 'holiday') return '休日';
+            if (school.status === 'absent') return '学校には行かなかった';
+            if (!['attended', 'school_day'].includes(school.status)) return '未入力';
+            let text = school.status === 'school_day' ? '学校の日' : '学校で過ごした';
+            const periods = school.attendedPeriods || [];
+            const recorded = school.participationRecorded === true || Array.isArray(school.attendedPeriods);
+            text += !recorded ? '／参加した時間は未入力' : periods.length ? `／${periods.join('・')}時間目に参加（予定${school.scheduledPeriods}時間）` : '／授業への参加なし';
+            if (school.otherSpace === true) text += '／授業以外の時間・別室などで過ごした';
+            return text;
         }
 
-        function loadMorningEntry(date) {
+        function loadDailyEntry(date) {
             const entries = JSON.parse(localStorage.getItem('childDailyEntries') || '[]');
-            const entry = entries.find(e => e.date === date);
-
-            // 既存データがある場合は読み込む
-            if (entry && entry.hasMorning) {
-                // 朝の様子を選択
-                morningData.morningMood = entry.morningMood;
-                document.querySelectorAll('.option-btn.morning-theme[data-field="morningMood"]').forEach(btn => {
-                    if (btn.dataset.value === entry.morningMood) {
-                        btn.classList.add('selected');
-                    } else {
-                        btn.classList.remove('selected');
-                    }
-                });
-
-                // 登校の様子を選択
-                morningData.schoolAttendance = entry.schoolAttendance;
-                document.querySelectorAll('.option-btn.morning-theme[data-field="schoolAttendance"]').forEach(btn => {
-                    if (btn.dataset.value === entry.schoolAttendance) {
-                        btn.classList.add('selected');
-                    } else {
-                        btn.classList.remove('selected');
-                    }
-                });
-
-                // メモを読み込む
-                document.getElementById('morningMemo').value = entry.morningMemo || '';
-            } else {
-                // データがない場合はリセット
-                morningData = { morningMood: '', schoolAttendance: '' };
-                document.querySelectorAll('.option-btn.morning-theme').forEach(b => b.classList.remove('selected'));
-                document.getElementById('morningMemo').value = '';
-            }
+            const entry = entries.find(item => item && item.date === date);
+            const daily = entry?.dailyRecord || {};
+            document.getElementById('dailyWakeTime').value = daily.wakeTime || '';
+            document.getElementById('dailyBedtime').value = daily.bedtime ?? entry?.bedtime ?? '';
+            selectedActivities = new Map((daily.extracurricular || []).map(item => [item.id, item.name]));
+            activitiesRecorded = daily.extracurricularRecorded === true;
+            renderActivityChoices();
+            const school = daily.school || {};
+            document.getElementById('dailySchoolStatus').value = school.status === 'holiday' ? 'holiday' : 'school_day';
+            document.getElementById('dailyPeriodCount').value = school.scheduledPeriods || '';
+            for (let n = 1; n <= 6; n++) document.getElementById('period' + n).checked = (school.attendedPeriods || []).includes(n);
+            periodsRecorded = school.participationRecorded === true || Array.isArray(school.attendedPeriods);
+            document.getElementById('dailyOtherSpace').value = school.otherSpace == null ? '' : school.otherSpace ? 'yes' : 'no';
+            document.getElementById('dailyMorning').value = daily.morningState || '';
+            document.getElementById('dailyFatigue').value = daily.eveningFatigue || '';
+            updateSchoolFields();
+            document.getElementById('dailyConcerns').value = daily.concerns || '';
         }
 
-        // 夜の記録：日付変更時に既存データを読み込む
-        document.getElementById('eveningDate').addEventListener('change', function() {
-            loadEveningEntry(this.value);
-        });
-
-        function loadEveningEntry(date) {
-            const entries = JSON.parse(localStorage.getItem('childDailyEntries') || '[]');
-            const entry = entries.find(e => e.date === date);
-
-            // リセット
-            eveningData = { activities: [], routineIssues: [], intensity: '' };
-            document.querySelectorAll('#activitiesList .checkbox-item').forEach(item => item.classList.remove('checked'));
-            document.querySelectorAll('#routineIssuesList .checkbox-item').forEach(item => item.classList.remove('checked'));
-            document.querySelectorAll('.option-btn[data-field="intensity"]').forEach(b => b.classList.remove('selected'));
-            document.getElementById('bedtime').value = '';
-            document.getElementById('praisePoints').value = '';
-            document.getElementById('eveningNotes').value = '';
-            document.getElementById('otherActivityText').value = '';
-            document.getElementById('otherActivityInput').style.display = 'none';
-            document.getElementById('intensityCard').style.display = 'none';
-
-            // 既存データがある場合は読み込む
-            if (entry && entry.hasEvening) {
-                // 今日やったことを選択
-                if (entry.activities) {
-                    entry.activities.forEach(activity => {
-                        // その他（...）の処理
-                        if (activity.startsWith('その他（')) {
-                            const otherText = activity.match(/その他（(.+)）/)[1];
-                            document.getElementById('otherActivityText').value = otherText;
-                            document.getElementById('otherActivityInput').style.display = 'block';
-                            const otherCheckbox = document.querySelector('#activitiesList .checkbox-item[data-activity="その他"]');
-                            if (otherCheckbox) {
-                                otherCheckbox.classList.add('checked');
-                                eveningData.activities.push('その他');
-                            }
-                        } else {
-                            const checkbox = document.querySelector(`#activitiesList .checkbox-item[data-activity="${activity}"]`);
-                            if (checkbox) {
-                                checkbox.classList.add('checked');
-                                eveningData.activities.push(activity);
-                            }
-                        }
-                    });
-                }
-
-                // 躓いたシーンを選択
-                if (entry.routineIssues && entry.routineIssues.length > 0) {
-                    entry.routineIssues.forEach(issue => {
-                        const checkbox = document.querySelector(`#routineIssuesList .checkbox-item[data-issue="${issue}"]`);
-                        if (checkbox) {
-                            checkbox.classList.add('checked');
-                            eveningData.routineIssues.push(issue);
-                        }
-                    });
-
-                    // 躓き度合を表示・選択
-                    document.getElementById('intensityCard').style.display = 'block';
-                    if (entry.intensity) {
-                        eveningData.intensity = entry.intensity;
-                        document.querySelectorAll('.option-btn[data-field="intensity"]').forEach(btn => {
-                            if (btn.dataset.value === entry.intensity) {
-                                btn.classList.add('selected');
-                            }
-                        });
-                    }
-                }
-
-                // 就寝時間
-                document.getElementById('bedtime').value = entry.bedtime || '';
-
-                // 褒めポイント
-                document.getElementById('praisePoints').value = entry.praisePoints || '';
-
-                // 気になったこと
-                document.getElementById('eveningNotes').value = entry.notes || '';
-            }
-        }
-
-        // 朝の記録を保存（一時保存対応）
-        function saveMorningEntry() {
-            const date = document.getElementById('morningDate').value;
-            const morningMemo = document.getElementById('morningMemo').value;
-
-            if (!date) {
-                alert('日付を選択してください');
+        async function saveDailyEntry(event) {
+            event.preventDefault();
+            if (!dailyEntriesReady || !userDataRef) {
+                document.getElementById('dailySaveStatus').textContent = '記録の読み込み完了後に保存してください。';
                 return;
             }
-
-            // 一時保存: 朝の様子または登校の様子のどちらかがあればOK
-            if (!morningData.morningMood && !morningData.schoolAttendance) {
-                alert('朝の様子または登校の様子を少なくとも1つ選択してください');
-                return;
-            }
-
-            const morningEntry = {
-                morningMood: morningData.morningMood || '',
-                schoolAttendance: morningData.schoolAttendance || '',
-                morningMemo: morningMemo,
-                hasMorning: true
+            const date = document.getElementById('dailyDate').value;
+            if (!date) return;
+            const schoolStatus = document.getElementById('dailySchoolStatus').value;
+            const count = Number(document.getElementById('dailyPeriodCount').value);
+            const dailyRecord = {
+                ...(schoolStatus === 'school_day' ? {
+                    wakeTime: document.getElementById('dailyWakeTime').value,
+                    bedtime: document.getElementById('dailyBedtime').value,
+                    morningState: document.getElementById('dailyMorning').value || null,
+                    eveningFatigue: document.getElementById('dailyFatigue').value || null
+                } : {}),
+                recordVersion: 4,
+                extracurricularRecorded: activitiesRecorded,
+                extracurricular: [...selectedActivities].map(([id, name]) => ({ id, name })),
+                school: {
+                    status: schoolStatus || null,
+                    scheduledPeriods: schoolStatus === 'school_day' && count ? count : null,
+                    participationRecorded: schoolStatus === 'school_day' && !!count && periodsRecorded,
+                    attendedPeriods: schoolStatus === 'school_day' && count && periodsRecorded ? Array.from({length: count}, (_, i) => i + 1).filter(n => document.getElementById('period' + n).checked) : null,
+                    otherSpace: schoolStatus === 'school_day' && document.getElementById('dailyOtherSpace').value ? document.getElementById('dailyOtherSpace').value === 'yes' : null
+                },
+                concerns: document.getElementById('dailyConcerns').value.trim()
             };
-
-            // 同じ日付の夜の記録があれば統合、なければ朝のみ保存
-            let entries = JSON.parse(localStorage.getItem('childDailyEntries') || '[]');
-            const existingIndex = entries.findIndex(e => e.date === date);
-            
-            if (existingIndex >= 0) {
-                // 既存の記録（夜）に朝のデータを追加
-                entries[existingIndex] = {
-                    ...entries[existingIndex],
-                    ...morningEntry
-                };
-            } else {
-                // 新規で朝のみの記録を作成
-                entries.push({
-                    id: Date.now(),
-                    date: date,
-                    ...morningEntry
-                });
+            const button = document.getElementById('dailySaveButton');
+            const status = document.getElementById('dailySaveStatus');
+            button.disabled = true;
+            status.textContent = '保存中…';
+            const id = Date.now();
+            try {
+                // 最新のクラウド記録にマージし、既存の朝・夜の項目や別の日の記録を保持する。
+                const result = await userDataRef.child('entries').transaction(current => {
+                    const entries = (current || []).filter(Boolean);
+                    const index = entries.findIndex(item => item.date === date);
+                    if (index >= 0) entries[index] = { ...entries[index], dailyRecord: { ...entries[index].dailyRecord, ...dailyRecord } };
+                    else entries.push({ id, date, dailyRecord });
+                    return entries.sort((a, b) => b.date.localeCompare(a.date));
+                }, undefined, false);
+                if (!result.committed) throw new Error('Save was not committed');
+                localStorage.setItem('childDailyEntries', JSON.stringify(result.snapshot.val() || []));
+                status.textContent = '保存しました。';
+                showTab('history');
+            } catch (error) {
+                status.textContent = '保存できませんでした。入力内容はそのままです。通信を確認して再試行してください。';
+            } finally {
+                button.disabled = false;
             }
-
-            entries.sort((a, b) => new Date(b.date) - new Date(a.date));
-            localStorage.setItem('childDailyEntries', JSON.stringify(entries));
-            
-            // Firebaseに保存
-            saveToFirebase('entries', entries);
-            
-            // リセット
-            morningData = { morningMood: '', schoolAttendance: '' };
-            document.getElementById('morningMemo').value = '';
-            document.querySelectorAll('.option-btn.morning-theme').forEach(b => b.classList.remove('selected'));
-            
-            alert('✅ 朝の記録を保存しました！');
-            showTab('history');
         }
 
-        // 夜の記録を保存（褒めポイント追加 + 一時保存対応）
-        function saveEveningEntry() {
-            const date = document.getElementById('eveningDate').value;
-            const bedtime = document.getElementById('bedtime').value;
-            const praisePoints = document.getElementById('praisePoints').value;
-            const notes = document.getElementById('eveningNotes').value;
-            const otherActivityText = document.getElementById('otherActivityText').value;
-
-            if (!date) {
-                alert('日付を選択してください');
-                return;
-            }
-
-            // 一時保存: 最低限、活動または就寝時間のどちらかがあればOK
-            if (eveningData.activities.length === 0 && !bedtime) {
-                alert('今日やったことまたは就寝時間を少なくとも1つ入力してください');
-                return;
-            }
-
-            if (eveningData.routineIssues.length > 0 && !eveningData.intensity) {
-                alert('躓き度合を選択してください');
-                return;
-            }
-
-            // その他が選択されている場合、テキストを追加
-            let activities = [...eveningData.activities];
-            if (activities.includes('その他') && otherActivityText) {
-                activities = activities.filter(a => a !== 'その他');
-                activities.push(`その他（${otherActivityText}）`);
-            }
-
-            const eveningEntry = {
-                activities: activities,
-                routineIssues: [...eveningData.routineIssues],
-                intensity: eveningData.intensity,
-                bedtime: bedtime || '',
-                praisePoints: praisePoints,
-                notes: notes
-            };
-
-            // 同じ日付の朝の記録があれば統合、なければ夜のみ保存
-            let entries = JSON.parse(localStorage.getItem('childDailyEntries') || '[]');
-            const existingIndex = entries.findIndex(e => e.date === date);
-            
-            if (existingIndex >= 0) {
-                // 既存の記録（朝）に夜のデータを追加
-                entries[existingIndex] = {
-                    ...entries[existingIndex],
-                    ...eveningEntry,
-                    hasEvening: true
-                };
-            } else {
-                // 新規で夜のみの記録を作成
-                entries.push({
-                    id: Date.now(),
-                    date: date,
-                    ...eveningEntry,
-                    hasEvening: true
-                });
-            }
-
-            entries.sort((a, b) => new Date(b.date) - new Date(a.date));
-            localStorage.setItem('childDailyEntries', JSON.stringify(entries));
-            
-            // Firebaseに保存
-            saveToFirebase('entries', entries);
-            
-            // リセット
-            eveningData = { activities: [], routineIssues: [], intensity: '' };
-            document.getElementById('bedtime').value = '';
-            document.getElementById('praisePoints').value = '';
-            document.getElementById('eveningNotes').value = '';
-            document.getElementById('otherActivityText').value = '';
-            document.getElementById('otherActivityInput').style.display = 'none';
-            document.querySelectorAll('#activitiesList .checkbox-item').forEach(item => item.classList.remove('checked'));
-            document.querySelectorAll('#routineIssuesList .checkbox-item').forEach(item => item.classList.remove('checked'));
-            document.querySelectorAll('.option-btn[data-field="intensity"]').forEach(b => b.classList.remove('selected'));
-            document.getElementById('intensityCard').style.display = 'none';
-            
-            alert('✅ 夜の記録を保存しました！');
-            showTab('history');
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
         }
 
         // 履歴を表示
@@ -1539,7 +1330,7 @@
                     <div class="empty-state">
                         <div class="empty-state-icon">📭</div>
                         <p>まだ記録がありません</p>
-                        <p>朝と夜の記録を始めましょう！</p>
+                        <p>日々の記録を始めましょう！</p>
                     </div>
                 `;
                 return;
@@ -1554,6 +1345,20 @@
                         </div>
                         <div class="history-date">${formatDate(entry.date)}</div>
                 `;
+
+                if (entry.dailyRecord) {
+                    const daily = entry.dailyRecord;
+                    html += `<div class="history-section"><strong>日々の記録</strong>
+                        <div class="history-label">日区分</div><div class="history-value">${daily.school?.status === 'holiday' ? '休日' : '学校'}</div>
+                        ${daily.school?.status === 'holiday' ? '' : `
+                        <div class="history-label">起床時間</div><div class="history-value">${escapeHtml(daily.wakeTime) || '未記入'}</div>
+                        <div class="history-label">就寝時間</div><div class="history-value">${escapeHtml(daily.bedtime) || '未記入'}</div>
+                        <div class="history-label">授業をどの程度受けたか</div><div class="history-value">${escapeHtml(schoolSummary(daily))}</div>
+                        <div class="history-label">登校前の様子</div><div class="history-value">${escapeHtml(morningLabels[daily.morningState] || '未入力・分からない')}</div>
+                        <div class="history-label">帰宅後・夕方の様子</div><div class="history-value">${escapeHtml(fatigueLabels[daily.eveningFatigue] || '未入力・分からない')}</div>`}
+                        <div class="history-label">課外活動</div><div class="history-value">${escapeHtml(activitySummary(daily))}</div>
+                        <div class="history-label">気になること</div><div class="history-value" style="white-space: pre-wrap;">${escapeHtml(daily.concerns) || '未記入'}</div></div>`;
+                }
 
                 // 朝の記録
                 if (entry.hasMorning) {
@@ -1647,28 +1452,10 @@
                 return;
             }
 
-            // 朝の記録があれば朝タブへ、なければ夜タブへ
-            if (entry.hasMorning) {
-                // 朝タブに切り替え
-                showTab('morning');
-                // 日付を設定して、データを読み込む
-                document.getElementById('morningDate').value = date;
-                checkWeekend(date);
-                loadMorningEntry(date);
-                
-                // もし夜の記録もあれば、夜タブも準備しておく
-                if (entry.hasEvening) {
-                    document.getElementById('eveningDate').value = date;
-                    // 夜タブに切り替えた時に自動で読み込まれる
-                }
-            } else if (entry.hasEvening) {
-                // 夜タブに切り替え
-                showTab('evening');
-                // 日付を設定して、データを読み込む
-                document.getElementById('eveningDate').value = date;
-                loadEveningEntry(date);
-            }
-            
+            showTab('daily');
+            document.getElementById('dailyDate').value = date;
+            loadDailyEntry(date);
+
             // スクロールをトップに
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -1722,50 +1509,14 @@
 
         // タブの切り替え
         function showTab(tab) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.getElementById('morningTab').style.display = 'none';
-            document.getElementById('eveningTab').style.display = 'none';
-            document.getElementById('historyTab').style.display = 'none';
-            document.getElementById('analysisTab').style.display = 'none';
-            document.getElementById('settingsTab').style.display = 'none';
-            document.getElementById('versionTab').style.display = 'none';
-
-            if (tab === 'morning') {
-                document.getElementById('morningTab').style.display = 'block';
-                document.querySelectorAll('.tab')[0].classList.add('active');
-                // 初期表示時に土日判定
-                const currentDate = document.getElementById('morningDate').value;
-                if (currentDate) {
-                    checkWeekend(currentDate);
-                }
-            } else if (tab === 'evening') {
-                document.getElementById('eveningTab').style.display = 'block';
-                document.querySelectorAll('.tab')[1].classList.add('active');
-                // 日付が設定されていれば、データを読み込む
-                const currentDate = document.getElementById('eveningDate').value;
-                if (currentDate) {
-                    loadEveningEntry(currentDate);
-                }
-            } else if (tab === 'history') {
-                document.getElementById('historyTab').style.display = 'block';
-                document.querySelectorAll('.tab')[2].classList.add('active');
-                displayHistory();
-            } else if (tab === 'analysis') {
-                document.getElementById('analysisTab').style.display = 'block';
-                document.querySelectorAll('.tab')[3].classList.add('active');
-                
-                // デフォルトで過去1週間を設定
-                if (!document.getElementById('analysisStartDate').value) {
-                    setQuickPeriod(7);
-                }
-            } else if (tab === 'settings') {
-                document.getElementById('settingsTab').style.display = 'block';
-                document.querySelectorAll('.tab')[4].classList.add('active');
-                displayLastBackupDate();
-            } else if (tab === 'version') {
-                document.getElementById('versionTab').style.display = 'block';
-                document.querySelectorAll('.tab')[5].classList.add('active');
-            }
+            const tabs = ['daily', 'history', 'analysis', 'settings', 'version'];
+            tabs.forEach((name, index) => {
+                document.getElementById(name + 'Tab').style.display = name === tab ? 'block' : 'none';
+                document.querySelectorAll('.tab')[index].classList.toggle('active', name === tab);
+            });
+            if (tab === 'history') displayHistory();
+            if (tab === 'analysis' && !document.getElementById('analysisStartDate').value) setQuickPeriod(7);
+            if (tab === 'settings') { displayLastBackupDate(); renderActivitySettings(); }
         }
 
         // クイック期間設定
@@ -1822,6 +1573,15 @@
                 const entry = periodData.find(e => e.date === date);
                 
                 output += `■ ${date}\n\n`;
+                if (entry.dailyRecord) {
+                    const daily = entry.dailyRecord;
+                    output += `【日々の記録】\n  日区分: ${daily.school?.status === 'holiday' ? '休日' : '学校'}\n`;
+                    if (daily.school?.status !== 'holiday') {
+                        output += `  起床時間: ${daily.wakeTime || '未記入'}\n  就寝時間: ${daily.bedtime || '未記入'}\n  授業をどの程度受けたか: ${schoolSummary(daily)}\n  登校前の様子: ${morningLabels[daily.morningState] || '未入力・分からない'}\n  帰宅後・夕方の様子: ${fatigueLabels[daily.eveningFatigue] || '未入力・分からない'}\n`;
+                    }
+                    output += `  課外活動: ${activitySummary(daily)}\n  気になること: ${daily.concerns || '未記入'}\n\n`;
+                }
+
                 
                 // 朝の記録
                 if (entry && entry.hasMorning) {
@@ -1891,12 +1651,13 @@
             const analyses = JSON.parse(localStorage.getItem('weeklyAnalyses') || '[]');
             
             const backupData = {
-                version: '1.3.0',
+                version: '1.5.0',
                 backupDate: new Date().toISOString(),
                 data: {
                     entries: entries,
                     schedules: schedules,
-                    analyses: analyses
+                    analyses: analyses,
+                    activityOptions: activityOptions
                 }
             };
             
@@ -1971,7 +1732,7 @@
             const file = event.target.files[0];
             if (!file) return;
             
-            if (!confirm('バックアップファイルからデータを復元します。\n既存のデータは残したまま、バックアップのデータを追加します。\n（同じ日付のデータがある場合は上書きされます）\n\n復元しますか？')) {
+            if (!confirm('バックアップファイルからデータを復元します。\n既存のデータは残したまま、バックアップのデータを追加します。\n（同じ日付はバックアップに含まれる項目を上書きし、含まれない項目は残します）\n\n復元しますか？')) {
                 event.target.value = '';
                 return;
             }
@@ -1998,8 +1759,8 @@
                     backupEntries.forEach(backupEntry => {
                         const existingIndex = existingEntries.findIndex(e => e.date === backupEntry.date);
                         if (existingIndex >= 0) {
-                            // 同じ日付があれば上書き
-                            existingEntries[existingIndex] = backupEntry;
+                            // バックアップにない項目は保持する（旧形式の復元でも新しい記録を消さない）。
+                            existingEntries[existingIndex] = { ...existingEntries[existingIndex], ...backupEntry };
                         } else {
                             // なければ追加
                             existingEntries.push(backupEntry);
@@ -2047,7 +1808,8 @@
                         Promise.all([
                             userDataRef.child('entries').set(existingEntries),
                             userDataRef.child('schedules').set(existingSchedules),
-                            userDataRef.child('analyses').set(existingAnalyses)
+                            userDataRef.child('analyses').set(existingAnalyses),
+                            ...(backupData.data.activityOptions ? [userDataRef.child('activityOptions').transaction(current => ({ ...(current || defaultActivityOptions), ...backupData.data.activityOptions })).then(result => { activityOptions = result.snapshot.val() || {}; })] : [])
                         ]).then(() => {
                             alert('✅ データを復元しました！\n\nページを再読み込みします。');
                             // 少し待ってからリロード（Firebaseの反映を確実にするため）
